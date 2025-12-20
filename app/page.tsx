@@ -35,7 +35,7 @@ export default function HomePage() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="text-base bg-transparent">
+              <Button asChild size="lg" variant="outline" className="text-base bg-background/80 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none">
                 <Link href="/shop/upload">Upload Your Design</Link>
               </Button>
             </div>
@@ -104,7 +104,7 @@ export default function HomePage() {
             <Button asChild size="lg" variant="outline">
               <Link href="/shop/products">Browse Marketplace</Link>
             </Button>
-            <Button asChild size="lg" variant="outline">
+            <Button asChild size="lg" variant="outline" className="bg-background/80 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none">
               <Link href="/shop/upload">Upload Design</Link>
             </Button>
           </div>

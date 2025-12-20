@@ -12,25 +12,11 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Fabnest3D - Professional 3D Printing Service",
+  title: "FABNEST - Professional 3D Printing Service",
   description:
     "Transform your ideas into reality with professional-grade 3D printing. Fast turnaround, multiple materials, and custom orders.",
-  generator: "v0.app",
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
+    icon: "/icon.svg",
     apple: "/apple-icon.png",
   },
 }

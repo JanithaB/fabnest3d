@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { useAuth } from "@/lib/auth"
 import { AdminSidebar } from "@/components/admin-sidebar"
+import { Navbar } from "@/components/navbar"
+import { Footer } from "@/components/footer"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -24,9 +26,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex">
-      <AdminSidebar />
-      <main className="flex-1">{children}</main>
-    </div>
+    <>
+      <Navbar />
+      <div className="flex min-h-[calc(100vh-4rem)]">
+        <AdminSidebar />
+        <main className="flex-1">{children}</main>
+      </div>
+      <Footer />
+    </>
   )
 }
