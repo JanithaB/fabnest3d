@@ -3,13 +3,13 @@ import { Box } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="border-t bg-muted/30">
+    <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2 font-bold text-lg">
               <Box className="h-6 w-6 text-primary" />
-              <span>PrintLab</span>
+              <span>Fabnest3D</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Professional 3D printing services for makers, designers, and businesses.
@@ -81,7 +81,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} PrintLab. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Fabnest3D. All rights reserved.</p>
         </div>
       </div>
     </footer>
