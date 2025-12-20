@@ -46,7 +46,7 @@ export function TechEffects() {
     mouseRef.current = { x: width / 2, y: height / 2 }
 
     // Create particles - more visible
-    const particleCount = 100
+    const particleCount = 50
     particlesRef.current = []
     for (let i = 0; i < particleCount; i++) {
       particlesRef.current.push({

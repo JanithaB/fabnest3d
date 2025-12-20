@@ -127,7 +127,7 @@ export default function AccountPage() {
               <Link href="/shop/products" className="flex flex-col items-start gap-2">
                 <ShoppingBag className="h-5 w-5" />
                 <div className="text-left">
-                  <div className="font-semibold">Browse Gallery</div>
+                  <div className="font-semibold">Browse Marketplace</div>
                   <div className="text-sm text-muted-foreground font-normal">Explore our collection of 3D models</div>
                 </div>
               </Link>

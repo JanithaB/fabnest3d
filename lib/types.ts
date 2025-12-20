@@ -47,3 +47,16 @@ export interface Order {
   status: "pending" | "processing" | "completed" | "cancelled"
   createdAt: Date
 }
+
+/**
+ * Gallery item interface for showcasing customer work
+ */
+export interface GalleryItem {
+  id: string
+  title: string
+  description: string
+  image: string
+  customerName?: string
+  tags: string[]
+  createdAt: Date
+}

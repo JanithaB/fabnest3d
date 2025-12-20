@@ -31,7 +31,7 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button asChild size="lg" className="text-base">
                 <Link href="/shop/products">
-                  Browse Prints
+                  Browse Marketplace
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
@@ -99,7 +99,10 @@ export default function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button asChild size="lg">
-              <Link href="/shop/products">View Gallery</Link>
+              <Link href="/gallery">View Gallery</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/shop/products">Browse Marketplace</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
               <Link href="/shop/upload">Upload Design</Link>

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Package, ShoppingBag, Users, Settings } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingBag, Users, Settings, Image } from "lucide-react"
 
 const sidebarItems = [
   {
@@ -20,6 +20,11 @@ const sidebarItems = [
     title: "Products",
     href: "/admin/products",
     icon: Package,
+  },
+  {
+    title: "Gallery",
+    href: "/admin/gallery",
+    icon: Image,
   },
   {
     title: "Users",

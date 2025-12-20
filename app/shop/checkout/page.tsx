@@ -49,7 +49,7 @@ export default function CheckoutPage() {
         <ShoppingCart className="h-16 w-16 text-muted-foreground mb-4" />
         <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
         <p className="text-muted-foreground mb-6">Add some items to your cart to checkout</p>
-        <Button onClick={() => router.push("/gallery")}>Browse Gallery</Button>
+        <Button onClick={() => router.push("/shop/products")}>Browse Marketplace</Button>
       </div>
     )
   }

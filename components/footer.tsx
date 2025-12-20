@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Box } from "lucide-react"
+import { Logo } from "@/components/logo"
 
 export function Footer() {
   return (
@@ -7,9 +7,8 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-              <Box className="h-6 w-6 text-primary" />
-              <span>Fabnest3D</span>
+            <Link href="/" className="flex items-center">
+              <Logo size="md" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Professional 3D printing services for makers, designers, and businesses.
@@ -20,8 +19,13 @@ export function Footer() {
             <h3 className="font-semibold">Products</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/shop/products" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/gallery" className="text-muted-foreground hover:text-foreground transition-colors">
                   Gallery
+                </Link>
+              </li>
+              <li>
+                <Link href="/shop/products" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Marketplace
                 </Link>
               </li>
               <li>
@@ -81,7 +85,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Fabnest3D. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} FABNEST. All rights reserved.</p>
         </div>
       </div>
     </footer>

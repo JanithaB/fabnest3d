@@ -31,8 +31,8 @@ export default function CartPage() {
         <div className="text-center max-w-md">
           <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
           <h1 className="text-2xl font-bold mb-2">Your cart is empty</h1>
-          <p className="text-muted-foreground mb-6">Browse our product gallery and add items to your cart.</p>
-          <Button onClick={() => router.push("/shop/products")}>Browse Products</Button>
+          <p className="text-muted-foreground mb-6">Browse our marketplace and add items to your cart.</p>
+          <Button onClick={() => router.push("/shop/products")}>Browse Marketplace</Button>
         </div>
       </div>
     )

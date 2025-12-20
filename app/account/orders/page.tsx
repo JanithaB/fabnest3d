@@ -151,7 +151,7 @@ export default function OrdersPage() {
                     You don't have any active orders at the moment
                   </p>
                   <Button asChild>
-                    <Link href="/shop/products">Browse Gallery</Link>
+                    <Link href="/shop/products">Browse Marketplace</Link>
                   </Button>
                 </CardContent>
               </Card>

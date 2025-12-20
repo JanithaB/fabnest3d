@@ -10,14 +10,15 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   return (
-    <Card className="group overflow-hidden border-2 hover:border-primary transition-colors">
-      <Link href={`/shop/products/${product.id}`}>
+    <Card className="group overflow-hidden border-2 hover:border-primary transition-colors w-full p-0 flex flex-col">
+      <Link href={`/shop/products/${product.id}`} className="block w-full flex flex-col">
         <CardContent className="p-0">
-          <div className="aspect-square relative overflow-hidden bg-muted">
+          <div className="relative w-full aspect-square overflow-hidden bg-muted">
             <Image
               src={product.image || "/placeholder.svg"}
               alt={product.name}
               fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           </div>
