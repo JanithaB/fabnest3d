@@ -19,7 +19,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center">
-          <Logo size="md" />
+          <Logo size="md" showText={false} />
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
@@ -84,7 +84,7 @@ export function Navbar() {
               <SheetHeader className="px-6 pt-6 pb-4 border-b">
                 <div className="flex items-center justify-between">
                   <SheetTitle>
-                    <Logo size="md" />
+                    <Logo size="md" showText={false} />
                   </SheetTitle>
                 </div>
               </SheetHeader>
