@@ -1,4 +1,5 @@
 import Image from "next/image"
+import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import type { GalleryItem } from "@/lib/types"
 import { Calendar, User } from "lucide-react"
@@ -10,10 +11,11 @@ interface GalleryCardProps {
 export function GalleryCard({ item }: GalleryCardProps) {
   return (
     <Card className="group overflow-hidden border-2 hover:border-primary transition-colors w-full p-0 flex flex-col">
+      <Link href={`/gallery/${item.id}`} className="block w-full flex flex-col">
       <CardContent className="p-0">
         <div className="relative w-full aspect-square overflow-hidden bg-muted">
           <Image
-            src={item.image || "/placeholder.svg"}
+            src={item.image || "/gallery/placeholder.svg"}
             alt={item.title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -49,6 +51,7 @@ export function GalleryCard({ item }: GalleryCardProps) {
           </div>
         </div>
       </CardContent>
+      </Link>
     </Card>
   )
 }

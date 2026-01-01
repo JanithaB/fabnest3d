@@ -3,6 +3,7 @@ import Image from "next/image"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { Product } from "@/lib/types"
+import { formatCurrency } from "@/lib/currency"
 
 interface ProductCardProps {
   product: Product
@@ -15,7 +16,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <CardContent className="p-0">
           <div className="relative w-full aspect-square overflow-hidden bg-muted">
             <Image
-              src={product.image || "/placeholder.svg"}
+              src={product.image || "/gallery/placeholder.svg"}
               alt={product.name}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -28,7 +29,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
           <div className="flex items-center justify-between w-full pt-2">
             <p className="text-sm text-muted-foreground">Starting from</p>
-            <p className="font-bold text-lg">${product.basePrice.toFixed(2)}</p>
+            <p className="font-bold text-lg">{formatCurrency(product.basePrice)}</p>
           </div>
           <Button className="w-full" size="sm">
             View Details

@@ -15,7 +15,7 @@ import { Box, Loader2 } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -29,7 +29,15 @@ export default function LoginPage() {
     const result = await login(email, password)
 
     if (result.success) {
-      router.push("/account")
+      // Get the user from the store after login completes
+      // The store is updated synchronously, so we can access it immediately
+      const loggedInUser = useAuth.getState().user
+      
+      if (loggedInUser?.role === "admin") {
+        router.push("/admin")
+      } else {
+        router.push("/account")
+      }
     } else {
       setError(result.error || "Login failed")
     }

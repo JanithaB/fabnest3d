@@ -11,6 +11,7 @@ import { ShoppingCart, CreditCard } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/lib/cart"
 import { useAuth } from "@/lib/auth"
+import { formatCurrency } from "@/lib/currency"
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -21,7 +22,11 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    // Redirect admins to admin dashboard
+    if (user?.role === "admin") {
+      router.push("/admin")
+    }
+  }, [user, router])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -155,7 +160,7 @@ export default function CheckoutPage() {
                   </div>
 
                   <Button type="submit" size="lg" className="w-full mt-6" disabled={isProcessing}>
-                    {isProcessing ? "Processing..." : `Pay $${total.toFixed(2)}`}
+                    {isProcessing ? "Processing..." : `Pay ${formatCurrency(total)}`}
                   </Button>
                 </form>
               </CardContent>
@@ -173,7 +178,7 @@ export default function CheckoutPage() {
                   <div key={item.id} className="space-y-1">
                     <div className="flex justify-between font-medium">
                       <span>{item.name}</span>
-                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+                      <span>{formatCurrency(item.price * item.quantity)}</span>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {item.material} • {item.size} • Qty: {item.quantity}
@@ -186,15 +191,15 @@ export default function CheckoutPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span>
+                    <span>{shipping === 0 ? "FREE" : formatCurrency(shipping)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tax</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>{formatCurrency(tax)}</span>
                   </div>
                 </div>
 
@@ -202,7 +207,7 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{formatCurrency(total)}</span>
                 </div>
               </CardContent>
             </Card>

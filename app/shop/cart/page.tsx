@@ -7,15 +7,22 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react"
 import { useCart } from "@/lib/cart"
+import { useAuth } from "@/lib/auth"
+import { formatCurrency } from "@/lib/currency"
 
 export default function CartPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const { items, removeItem, updateQuantity, getTotalPrice } = useCart()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    // Redirect admins to admin dashboard
+    if (user?.role === "admin") {
+      router.push("/admin")
+    }
+  }, [user, router])
 
   if (!mounted) {
     return (
@@ -55,7 +62,7 @@ export default function CartPage() {
                 <CardContent className="p-6">
                   <div className="flex gap-4">
                     <div className="relative w-24 h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden">
-                      <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
+                      <Image src={item.image || "/gallery/placeholder.svg"} alt={item.name} fill className="object-cover" />
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -63,7 +70,7 @@ export default function CartPage() {
                       <p className="text-sm text-muted-foreground mb-2">
                         {item.material} • {item.color}
                       </p>
-                      <p className="text-lg font-bold">${item.price.toFixed(2)}</p>
+                      <p className="text-lg font-bold">{formatCurrency(item.price)}</p>
                     </div>
 
                     <div className="flex flex-col items-end justify-between">
@@ -106,20 +113,20 @@ export default function CartPage() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span>
+                    <span>{shipping === 0 ? "FREE" : formatCurrency(shipping)}</span>
                   </div>
                   {subtotal < 100 && (
                     <p className="text-xs text-muted-foreground">
-                      Add ${(100 - subtotal).toFixed(2)} more for free shipping
+                      Add {formatCurrency(100 - subtotal)} more for free shipping
                     </p>
                   )}
                   <div className="border-t pt-3 flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{formatCurrency(total)}</span>
                   </div>
                 </div>
 

@@ -69,12 +69,14 @@ export function UserMenu() {
             My Account
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/account/orders" className="cursor-pointer">
-            <Package className="mr-2 h-4 w-4" />
-            My Orders
-          </Link>
-        </DropdownMenuItem>
+        {user.role !== "admin" && (
+          <DropdownMenuItem asChild>
+            <Link href="/account/orders" className="cursor-pointer">
+              <Package className="mr-2 h-4 w-4" />
+              My Orders
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href="/account/settings" className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />

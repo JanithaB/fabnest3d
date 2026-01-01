@@ -1,29 +1,76 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { products as initialProducts } from "@/lib/mock-data"
-import type { Product } from "@/lib/types"
-import { Search, Plus, Edit2, Trash2, X } from "lucide-react"
+import { useAuth } from "@/lib/auth"
+import { Search, Plus, Edit2, Trash2, Loader2 } from "lucide-react"
+import { formatCurrency } from "@/lib/currency"
+
+type Product = {
+  id: string
+  name: string
+  description: string
+  image: string
+  basePrice: number
+  category: string
+  tags: string[]
+  images?: Array<{
+    file: {
+      url: string
+    }
+  }>
+}
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>(initialProducts)
+  const { token } = useAuth()
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    image: "",
+    imageFileId: "",
     basePrice: "",
     category: "",
     tags: "",
   })
+  const [uploading, setUploading] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [updating, setUpdating] = useState(false)
+
+  useEffect(() => {
+    if (token) {
+      fetchProducts()
+    }
+  }, [token])
+
+  const fetchProducts = async () => {
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) return
+
+      const response = await fetch('/api/products', {
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setProducts(data.products || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredProducts = products.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
@@ -31,7 +78,7 @@ export default function AdminProductsPage() {
     setFormData({
       name: "",
       description: "",
-      image: "",
+      imageFileId: "",
       basePrice: "",
       category: "",
       tags: "",
@@ -40,24 +87,88 @@ export default function AdminProductsPage() {
     setEditingId(null)
   }
 
-  const handleAdd = () => {
-    if (!formData.name || !formData.description || !formData.image || !formData.basePrice) {
-      alert("Please fill in all required fields")
+  const handleFileUpload = async (file: File): Promise<string | null> => {
+    setUploading(true)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return null
+      }
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('fileType', 'image')
+      formData.append('destination', 'products')
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: formData,
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        return data.file.id
+      } else {
+        alert(data.error || 'Failed to upload image')
+        return null
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('Failed to upload image')
+      return null
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleAdd = async () => {
+    if (!formData.name || !formData.description || !formData.imageFileId || !formData.basePrice) {
+      alert("Please fill in all required fields and upload an image")
       return
     }
 
-    const newProduct: Product = {
-      id: Date.now().toString(),
-      name: formData.name,
-      description: formData.description,
-      image: formData.image,
-      basePrice: parseFloat(formData.basePrice),
-      category: formData.category || "Uncategorized",
-      tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-    }
+    setUploading(true)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return
+      }
 
-    setProducts([newProduct, ...products])
-    resetForm()
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          description: formData.description.trim(),
+          basePrice: parseFloat(formData.basePrice),
+          category: formData.category.trim() || "Uncategorized",
+          tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+          imageFileId: formData.imageFileId,
+        })
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        await fetchProducts()
+        resetForm()
+        alert('Product added successfully!')
+      } else {
+        alert(data.error || 'Failed to add product')
+      }
+    } catch (error) {
+      console.error('Add product error:', error)
+      alert('Failed to add product')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleEdit = (product: Product) => {
@@ -65,40 +176,97 @@ export default function AdminProductsPage() {
     setFormData({
       name: product.name,
       description: product.description,
-      image: product.image,
+      imageFileId: product.images?.[0]?.file?.url ? "" : "", // Will be set if new image uploaded
       basePrice: product.basePrice.toString(),
       category: product.category,
       tags: product.tags.join(", "),
     })
   }
 
-  const handleUpdate = () => {
-    if (!formData.name || !formData.description || !formData.image || !formData.basePrice) {
+  const handleUpdate = async () => {
+    if (!formData.name || !formData.description || !formData.basePrice || !editingId) {
       alert("Please fill in all required fields")
       return
     }
 
-    setProducts(
-      products.map((product) =>
-        product.id === editingId
-          ? {
-              ...product,
-              name: formData.name,
-              description: formData.description,
-              image: formData.image,
-              basePrice: parseFloat(formData.basePrice),
-              category: formData.category || "Uncategorized",
-              tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-            }
-          : product
-      )
-    )
-    resetForm()
+    setUpdating(true)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return
+      }
+
+      const updateData: any = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        basePrice: parseFloat(formData.basePrice),
+        category: formData.category.trim() || "Uncategorized",
+        tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      }
+
+      // Only include imageFileId if a new image was uploaded
+      if (formData.imageFileId) {
+        updateData.imageFileId = formData.imageFileId
+      }
+
+      const response = await fetch(`/api/products/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify(updateData)
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        await fetchProducts()
+        resetForm()
+        alert('Product updated successfully!')
+      } else {
+        alert(data.error || 'Failed to update product')
+      }
+    } catch (error) {
+      console.error('Update product error:', error)
+      alert('Failed to update product')
+    } finally {
+      setUpdating(false)
+    }
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      setProducts(products.filter((product) => product.id !== id))
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) {
+      return
+    }
+
+    setDeleting(id)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return
+      }
+
+      const response = await fetch(`/api/products/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        }
+      })
+
+      if (response.ok) {
+        await fetchProducts()
+        alert('Product deleted successfully!')
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to delete product')
+      }
+    } catch (error) {
+      console.error('Delete product error:', error)
+      alert('Failed to delete product')
+    } finally {
+      setDeleting(null)
     }
   }
 
@@ -140,15 +308,30 @@ export default function AdminProductsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Image URL *</label>
+                <label className="text-sm font-medium mb-2 block">Image *</label>
                 <Input
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="/image.jpg"
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const fileId = await handleFileUpload(file)
+                      if (fileId) {
+                        setFormData({ ...formData, imageFileId: fileId })
+                      }
+                    }
+                  }}
+                  disabled={uploading}
                 />
+                {uploading && (
+                  <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+                )}
+                {formData.imageFileId && !uploading && (
+                  <p className="text-sm text-green-600 mt-1">✓ Image uploaded</p>
+                )}
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Base Price ($) *</label>
+                <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
                 <Input
                   type="number"
                   step="0.01"
@@ -177,8 +360,17 @@ export default function AdminProductsPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleAdd}>Add Product</Button>
-              <Button variant="outline" onClick={resetForm}>
+              <Button onClick={handleAdd} disabled={uploading}>
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Product"
+                )}
+              </Button>
+              <Button variant="outline" onClick={resetForm} disabled={uploading}>
                 Cancel
               </Button>
             </div>
@@ -211,15 +403,30 @@ export default function AdminProductsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Image URL *</label>
+                <label className="text-sm font-medium mb-2 block">Image (optional - leave empty to keep current)</label>
                 <Input
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="/image.jpg"
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const fileId = await handleFileUpload(file)
+                      if (fileId) {
+                        setFormData({ ...formData, imageFileId: fileId })
+                      }
+                    }
+                  }}
+                  disabled={uploading || updating}
                 />
+                {uploading && (
+                  <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+                )}
+                {formData.imageFileId && !uploading && (
+                  <p className="text-sm text-green-600 mt-1">✓ New image uploaded</p>
+                )}
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Base Price ($) *</label>
+                <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
                 <Input
                   type="number"
                   step="0.01"
@@ -248,8 +455,17 @@ export default function AdminProductsPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleUpdate}>Update Product</Button>
-              <Button variant="outline" onClick={resetForm}>
+              <Button onClick={handleUpdate} disabled={updating}>
+                {updating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Product"
+                )}
+              </Button>
+              <Button variant="outline" onClick={resetForm} disabled={updating}>
                 Cancel
               </Button>
             </div>
@@ -276,12 +492,22 @@ export default function AdminProductsPage() {
           <CardTitle>Products ({filteredProducts.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                  <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
-                </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredProducts.map((product) => (
+                <div key={product.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                  <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                    <Image 
+                      src={product.images?.[0]?.file?.url || product.image || "/gallery/placeholder.svg"} 
+                      alt={product.name} 
+                      fill 
+                      className="object-cover" 
+                    />
+                  </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-lg">{product.name}</h3>
@@ -290,7 +516,7 @@ export default function AdminProductsPage() {
                   <p className="text-sm text-muted-foreground line-clamp-1">{product.description}</p>
                   <div className="flex items-center gap-4 mt-2 text-sm">
                     <span className="text-muted-foreground">
-                      Price: <span className="font-medium text-foreground">${product.basePrice.toFixed(2)}</span>
+                      Price: <span className="font-medium text-foreground">{formatCurrency(product.basePrice)}</span>
                     </span>
                     <span className="text-muted-foreground">
                       Category: <span className="font-medium text-foreground">{product.category}</span>
@@ -306,17 +532,33 @@ export default function AdminProductsPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={() => handleEdit(product)}>
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => handleDelete(product.id)} className="text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => handleEdit(product)}
+                      disabled={deleting === product.id}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => handleDelete(product.id)} 
+                      className="text-destructive"
+                      disabled={deleting === product.id || deleting !== null}
+                    >
+                      {deleting === product.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User model - stores all user accounts
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String // hashed password
+  name      String
+  role      String   @default("user") // "user" | "admin"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  orders        Order[]
+  customUploads CustomOrderFile[]
+  quoteRequests QuoteRequest[]
+
+  // Indexes for performance
+  @@index([email])
+  @@map("users")
+}
+
+// Product model - stores all available products
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  basePrice   Float
+  category    String
+  tags        String[] // PostgreSQL array
+  printTime   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  orderItems OrderItem[]
+  images     ProductImage[]
+
+  // Indexes for performance
+  @@index([category])
+  @@index([name])
+  @@map("products")
+}
+
+// Order model - stores all orders from all users
+model Order {
+  id                String    @id @default(cuid())
+  userId            String // Foreign key to User
+  status            String    @default("pending") // pending | processing | printing | shipped | delivered | cancelled
+  subtotal          Float
+  shipping          Float
+  tax               Float
+  total             Float
+  orderDate         DateTime  @default(now())
+  estimatedDelivery DateTime?
+  trackingNumber    String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items OrderItem[]
+
+  // Indexes for performance
+  @@index([userId])
+  @@index([status])
+  @@index([orderDate])
+  @@map("orders")
+}
+
+// OrderItem model - stores individual items within an order
+// This allows one order to have multiple products with different materials/sizes
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String // Foreign key to Order
+  productId   String? // Foreign key to Product (nullable for custom uploads)
+  productName String // Denormalized for historical reference
+  material    String
+  color       String?
+  size        String
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float
+  isCustom    Boolean  @default(false) // True if this is a custom upload
+  createdAt   DateTime @default(now())
+
+  // Relations
+  order      Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product?         @relation(fields: [productId], references: [id])
+  customFile CustomOrderFile?
+
+  // Indexes for performance
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// GalleryItem model - stores gallery showcase items
+model GalleryItem {
+  id           String   @id @default(cuid())
+  title        String
+  description  String   @db.Text
+  customerName String?
+  tags         String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  images GalleryImage[]
+
+  // Indexes for performance
+  @@index([createdAt])
+  @@map("gallery_items")
+}
+
+// File model - tracks all uploaded files (images and 3D models)
+model File {
+  id         String   @id @default(cuid())
+  filename   String // Original filename
+  path       String // Storage path
+  url        String // Public URL to access the file
+  mimeType   String // e.g., "image/jpeg", "model/stl"
+  fileType   String // "image" | "model" | "other"
+  size       Int // File size in bytes
+  uploadedBy String? // User ID who uploaded (nullable for product images)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  productImages    ProductImage[]
+  galleryImages    GalleryImage[]
+  customOrderFiles CustomOrderFile[]
+
+  @@index([fileType])
+  @@index([uploadedBy])
+  @@map("files")
+}
+
+// ProductImage - links products to their image files
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  fileId    String
+  isPrimary Boolean  @default(false)
+  order     Int      @default(0) // For ordering multiple images
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  file    File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, fileId])
+  @@index([productId])
+  @@map("product_images")
+}
+
+// GalleryImage - links gallery items to their images
+model GalleryImage {
+  id            String   @id @default(cuid())
+  galleryItemId String
+  fileId        String
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  galleryItem GalleryItem @relation(fields: [galleryItemId], references: [id], onDelete: Cascade)
+  file        File        @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([galleryItemId, fileId])
+  @@index([galleryItemId])
+  @@map("gallery_images")
+}
+
+// CustomOrderFile - stores user-uploaded 3D model files for custom orders
+model CustomOrderFile {
+  id          String   @id @default(cuid())
+  orderItemId String?  @unique // Link to order item if part of an order (unique for one-to-one relation)
+  userId      String // User who uploaded
+  fileId      String // Reference to File
+  material    String // Selected material
+  quality     String // Selected quality
+  notes       String? // User notes
+  status      String   @default("pending") // pending | processing | ready | failed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  file         File          @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  orderItem    OrderItem?    @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  quoteRequest QuoteRequest?
+
+  @@index([userId])
+  @@index([status])
+  @@map("custom_order_files")
+}
+
+// QuoteRequest - stores price quote requests from users
+model QuoteRequest {
+  id             String    @id @default(cuid())
+  userId         String // User who requested quote
+  customFileId   String    @unique // Link to custom file
+  status         String    @default("pending") // pending | quoted | accepted | rejected
+  requestedPrice Float? // Price requested by admin
+  adminNotes     String? // Admin notes/calculations
+  adminId        String? // Admin who sent the quote
+  adminName      String? // Admin name who sent the quote
+  piSent         Boolean   @default(false) // Whether PI has been sent
+  piSentAt       DateTime? // When PI was sent
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customFile CustomOrderFile @relation(fields: [customFileId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([adminId])
+  @@map("quote_requests")
+}

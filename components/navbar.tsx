@@ -12,8 +12,9 @@ import { Logo } from "@/components/logo"
 import { useState } from "react"
 
 export function Navbar() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const [open, setOpen] = useState(false)
+  const isAdmin = user?.role === "admin"
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -23,40 +24,46 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
-          <Link
-            href="/gallery"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Gallery
-          </Link>
-          <Link
-            href="/shop/products"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Marketplace
-          </Link>
-          <Link
-            href="/shop/upload"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Upload
-          </Link>
-          <Link
-            href="/shop/cart"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Cart
-          </Link>
+          {!isAdmin && (
+            <>
+              <Link
+                href="/gallery"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Gallery
+              </Link>
+              <Link
+                href="/shop/products"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Marketplace
+              </Link>
+              <Link
+                href="/shop/upload"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Upload
+              </Link>
+              <Link
+                href="/shop/cart"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cart
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" asChild className="hidden sm:flex">
-            <Link href="/shop/cart">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="sr-only">Shopping cart</span>
-            </Link>
-          </Button>
+          {!isAdmin && (
+            <Button variant="ghost" size="icon" asChild className="hidden sm:flex">
+              <Link href="/shop/cart">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="sr-only">Shopping cart</span>
+              </Link>
+            </Button>
+          )}
 
           <div className="hidden md:flex items-center gap-2">
             {isAuthenticated ? (
@@ -91,38 +98,42 @@ export function Navbar() {
               
               <nav className="flex flex-col py-4">
                 <div className="px-4 space-y-1">
-                  <Link
-                    href="/gallery"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    onClick={() => setOpen(false)}
-                  >
-                    <Image className="h-5 w-5" />
-                    Gallery
-                  </Link>
-                  <Link
-                    href="/shop/products"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    onClick={() => setOpen(false)}
-                  >
-                    <ShoppingBag className="h-5 w-5" />
-                    Marketplace
-                  </Link>
-                  <Link
-                    href="/shop/upload"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    onClick={() => setOpen(false)}
-                  >
-                    <Upload className="h-5 w-5" />
-                    Upload
-                  </Link>
-                  <Link
-                    href="/shop/cart"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    onClick={() => setOpen(false)}
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    Cart
-                  </Link>
+                  {!isAdmin && (
+                    <>
+                      <Link
+                        href="/gallery"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                        onClick={() => setOpen(false)}
+                      >
+                        <Image className="h-5 w-5" />
+                        Gallery
+                      </Link>
+                      <Link
+                        href="/shop/products"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                        onClick={() => setOpen(false)}
+                      >
+                        <ShoppingBag className="h-5 w-5" />
+                        Marketplace
+                      </Link>
+                      <Link
+                        href="/shop/upload"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                        onClick={() => setOpen(false)}
+                      >
+                        <Upload className="h-5 w-5" />
+                        Upload
+                      </Link>
+                      <Link
+                        href="/shop/cart"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                        onClick={() => setOpen(false)}
+                      >
+                        <ShoppingCart className="h-5 w-5" />
+                        Cart
+                      </Link>
+                    </>
+                  )}
                 </div>
 
                 <Separator className="my-4" />
@@ -133,9 +144,11 @@ export function Navbar() {
                       <Button asChild variant="outline" className="w-full justify-start" onClick={() => setOpen(false)}>
                         <Link href="/account">My Account</Link>
                       </Button>
-                      <Button asChild variant="outline" className="w-full justify-start" onClick={() => setOpen(false)}>
-                        <Link href="/account/orders">My Orders</Link>
-                      </Button>
+                      {!isAdmin && (
+                        <Button asChild variant="outline" className="w-full justify-start" onClick={() => setOpen(false)}>
+                          <Link href="/account/orders">My Orders</Link>
+                        </Button>
+                      )}
                     </>
                   ) : (
                     <>

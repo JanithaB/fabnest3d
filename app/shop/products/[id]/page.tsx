@@ -1,21 +1,74 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import { PriceCalculator } from "@/components/price-calculator"
-import { products } from "@/lib/mock-data"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Loader2 } from "lucide-react"
 
-interface ProductPageProps {
-  params: Promise<{ id: string }>
+type Product = {
+  id: string
+  name: string
+  description: string
+  image: string
+  basePrice: number
+  category: string
+  tags: string[]
+  images?: Array<{
+    file: {
+      url: string
+    }
+  }>
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const { id } = await params
-  const product = products.find((p) => p.id === id)
+export default function ProductPage() {
+  const params = useParams()
+  const id = params.id as string
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (id) {
+      fetchProduct()
+    }
+  }, [id])
+
+  const fetchProduct = async () => {
+    try {
+      const response = await fetch(`/api/products/${id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setProduct(data.product)
+      } else if (response.status === 404) {
+        setProduct(null)
+      }
+    } catch (error) {
+      console.error("Failed to fetch product:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="flex-1 py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   if (!product) {
     notFound()
   }
+
+  const productImage = product.images?.[0]?.file?.url || product.image || "/gallery/placeholder.svg"
 
   return (
     <main className="flex-1 py-12 px-4">
@@ -26,7 +79,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <Card className="overflow-hidden border-2">
               <CardContent className="p-0">
                 <div className="aspect-square relative bg-muted">
-                  <Image src={product.image || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
+                  <Image src={productImage} alt={product.name} fill className="object-cover" />
                 </div>
               </CardContent>
             </Card>

@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Upload, File, X, ArrowRight } from "lucide-react"
+import { Upload, File, X, ArrowRight, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth"
 
 const MATERIALS = [
   { value: "pla", label: "PLA (Standard)" },
@@ -20,19 +21,22 @@ const MATERIALS = [
 ]
 
 const QUALITY_OPTIONS = [
-  { value: "draft", label: "Draft (0.3mm)", price: 0.8 },
-  { value: "standard", label: "Standard (0.2mm)", price: 1.0 },
-  { value: "high", label: "High (0.1mm)", price: 1.4 },
-  { value: "ultra", label: "Ultra (0.05mm)", price: 2.0 },
+  { value: "draft", label: "Draft (0.3mm)" },
+  { value: "standard", label: "Standard (0.2mm)" },
+  { value: "high", label: "High (0.1mm)" },
+  { value: "ultra", label: "Ultra (0.05mm)" },
 ]
 
 export function FileUpload() {
   const router = useRouter()
+  const { user, isAuthenticated } = useAuth()
   const [file, setFile] = useState<File | null>(null)
   const [material, setMaterial] = useState("pla")
   const [quality, setQuality] = useState("standard")
   const [notes, setNotes] = useState("")
   const [isDragging, setIsDragging] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -51,7 +55,7 @@ export function FileUpload() {
     if (droppedFile && isValidFileType(droppedFile)) {
       setFile(droppedFile)
     } else {
-      alert("Please upload a valid 3D file (STL, OBJ, or 3MF)")
+      alert("Please upload a valid file (STL, OBJ, 3MF, RAR, or ZIP)")
     }
   }
 
@@ -60,12 +64,12 @@ export function FileUpload() {
     if (selectedFile && isValidFileType(selectedFile)) {
       setFile(selectedFile)
     } else {
-      alert("Please upload a valid 3D file (STL, OBJ, or 3MF)")
+      alert("Please upload a valid file (STL, OBJ, 3MF, RAR, or ZIP)")
     }
   }
 
   const isValidFileType = (file: File) => {
-    const validExtensions = [".stl", ".obj", ".3mf"]
+    const validExtensions = [".stl", ".obj", ".3mf", ".rar", ".zip"]
     return validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext))
   }
 
@@ -73,17 +77,92 @@ export function FileUpload() {
     setFile(null)
   }
 
-  // Calculate estimated price (mock calculation)
-  const qualityMultiplier = QUALITY_OPTIONS.find((q) => q.value === quality)?.price || 1
-  const estimatedPrice = file ? (25 * qualityMultiplier).toFixed(2) : "0.00"
-
-  const handleProceedToCheckout = () => {
+  const handleRequestQuote = async () => {
     if (!file) {
-      alert("Please upload a file first")
+      setUploadError("Please upload a file first")
       return
     }
-    // In a real app, this would save the upload data to state/context
-    router.push("/checkout")
+
+    if (!isAuthenticated || !user) {
+      setUploadError("Please log in to upload files")
+      router.push("/auth/login")
+      return
+    }
+
+    setIsUploading(true)
+    setUploadError(null)
+
+    try {
+      // Step 1: Upload the file
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('fileType', 'model')
+
+      // Get token from auth store
+      const { token } = useAuth.getState()
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        headers: token ? {
+          'Authorization': `Bearer ${token}`,
+        } : {},
+        body: formData,
+      })
+
+      const uploadData = await uploadResponse.json()
+
+      if (!uploadResponse.ok) {
+        throw new Error(uploadData.error || 'Upload failed')
+      }
+
+      // Step 2: Create custom order file record
+      const customOrderResponse = await fetch('/api/upload/custom-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          fileId: uploadData.file.id,
+          material: material,
+          quality: quality,
+          notes: notes || null,
+        }),
+      })
+
+      const customOrderData = await customOrderResponse.json()
+
+      if (!customOrderResponse.ok) {
+        throw new Error(customOrderData.error || 'Failed to create order')
+      }
+
+      // Step 3: Create quote request
+      const quoteResponse = await fetch('/api/quote-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          customFileId: customOrderData.customFile.id,
+        }),
+      })
+
+      const quoteData = await quoteResponse.json()
+
+      if (!quoteResponse.ok) {
+        throw new Error(quoteData.error || 'Failed to create quote request')
+      }
+
+      // Step 4: Show success and redirect
+      alert('Quote request submitted successfully! An admin will review your file and send you a price quote via email.')
+      router.push('/account/orders')
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      setUploadError(error.message || 'Failed to upload file. Please try again.')
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return (
@@ -111,7 +190,7 @@ export function FileUpload() {
               type="file"
               id="file-upload"
               className="hidden"
-              accept=".stl,.obj,.3mf"
+              accept=".stl,.obj,.3mf,.rar,.zip"
               onChange={handleFileChange}
             />
             <label htmlFor="file-upload" className="cursor-pointer">
@@ -121,7 +200,7 @@ export function FileUpload() {
                 </div>
                 <div>
                   <p className="font-medium">Drop your file here, or browse</p>
-                  <p className="text-sm text-muted-foreground mt-1">Supports: STL, OBJ, 3MF (max 100MB)</p>
+                  <p className="text-sm text-muted-foreground mt-1">Supports: STL, OBJ, 3MF, RAR, ZIP (max 100MB)</p>
                 </div>
               </div>
             </label>
@@ -203,41 +282,58 @@ export function FileUpload() {
         </CardContent>
       </Card>
 
-      {/* Price Estimate Card */}
+      {/* Request Quote Card */}
       <Card className="border-2 border-primary/20">
         <CardHeader>
-          <CardTitle>Price Estimate</CardTitle>
+          <CardTitle>Request Price Quote</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {file ? (
             <>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Base Price:</span>
-                  <span>$25.00</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Quality Adjustment:</span>
-                  <span>×{qualityMultiplier.toFixed(1)}</span>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  After uploading your file, our team will review it and send you a detailed price quote via email. 
+                  You'll receive a Proforma Invoice (PI) with the exact pricing.
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Material:</span>
+                    <span className="font-medium">{MATERIALS.find(m => m.value === material)?.label}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Quality:</span>
+                    <span className="font-medium">{QUALITY_OPTIONS.find(q => q.value === quality)?.label}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-between text-2xl font-bold pt-2 border-t">
-                <span>Estimated Total:</span>
-                <span className="text-primary">${estimatedPrice}</span>
-              </div>
+              {uploadError && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <p className="text-sm text-destructive">{uploadError}</p>
+                </div>
+              )}
 
-              <p className="text-xs text-muted-foreground text-center">
-                Final price may vary based on actual model volume and complexity
-              </p>
-
-              <Button onClick={handleProceedToCheckout} size="lg" className="w-full">
-                Proceed to Checkout
-                <ArrowRight className="ml-2 h-5 w-5" />
+              <Button 
+                onClick={handleRequestQuote} 
+                size="lg" 
+                className="w-full"
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Submitting Request...
+                  </>
+                ) : (
+                  <>
+                    Request Price Quote
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
               </Button>
             </>
           ) : (
-            <p className="text-center text-muted-foreground py-4">Upload a file to see price estimate</p>
+            <p className="text-center text-muted-foreground py-4">Upload a file to request a price quote</p>
           )}
         </CardContent>
       </Card>

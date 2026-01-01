@@ -6,33 +6,40 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { useAuth } from "@/lib/auth"
 import { AdminSidebar } from "@/components/admin-sidebar"
-import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
+import { Loader2 } from "lucide-react"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, _hasHydrated } = useAuth()
 
   useEffect(() => {
+    // Wait for Zustand to hydrate from localStorage before checking auth
+    if (!_hasHydrated) return
+
     if (!isAuthenticated) {
-      router.push("/login")
+      router.push("/auth/login")
     } else if (user?.role !== "admin") {
       router.push("/account")
     }
-  }, [isAuthenticated, user, router])
+  }, [_hasHydrated, isAuthenticated, user, router])
+
+  // Show loading while Zustand hydrates from localStorage
+  if (!_hasHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   if (!isAuthenticated || user?.role !== "admin") {
     return null
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="flex min-h-[calc(100vh-4rem)]">
-        <AdminSidebar />
-        <main className="flex-1">{children}</main>
-      </div>
-      <Footer />
-    </>
+    <div className="flex min-h-screen">
+      <AdminSidebar />
+      <main className="flex-1">{children}</main>
+    </div>
   )
 }

@@ -1,32 +1,80 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Plus, X, Image as ImageIcon, Edit2 } from "lucide-react"
-import { galleryItems } from "@/lib/gallery-data"
-import type { GalleryItem } from "@/lib/types"
+import { Plus, X, Image as ImageIcon, Edit2, Loader2, Trash2 } from "lucide-react"
+import { useAuth } from "@/lib/auth"
+import Image from "next/image"
+
+type GalleryItem = {
+  id: string
+  title: string
+  description: string
+  image: string
+  images: Array<{
+    id: string
+    url: string
+    order: number
+  }>
+  customerName?: string
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+}
 
 export default function AdminGalleryPage() {
-  const [items, setItems] = useState<GalleryItem[]>(galleryItems)
+  const { token } = useAuth()
+  const [items, setItems] = useState<GalleryItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    image: "",
+    imageFileId: "",
     customerName: "",
     tags: "",
   })
+  const [uploading, setUploading] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [updating, setUpdating] = useState(false)
+
+  useEffect(() => {
+    if (token) {
+      fetchGalleryItems()
+    }
+  }, [token])
+
+  const fetchGalleryItems = async () => {
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) return
+
+      const response = await fetch('/api/gallery', {
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setItems(data.items || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch gallery items:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const resetForm = () => {
     setFormData({
       title: "",
       description: "",
-      image: "",
+      imageFileId: "",
       customerName: "",
       tags: "",
     })
@@ -34,24 +82,87 @@ export default function AdminGalleryPage() {
     setEditingId(null)
   }
 
-  const handleAdd = () => {
-    if (!formData.title || !formData.description || !formData.image) {
-      alert("Please fill in all required fields")
+  const handleFileUpload = async (file: File): Promise<string | null> => {
+    setUploading(true)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return null
+      }
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('fileType', 'image')
+      formData.append('destination', 'gallery')
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: formData,
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        return data.file.id
+      } else {
+        alert(data.error || 'Failed to upload image')
+        return null
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      alert('Failed to upload image')
+      return null
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleAdd = async () => {
+    if (!formData.title || !formData.description || !formData.imageFileId) {
+      alert("Please fill in all required fields and upload an image")
       return
     }
 
-    const newItem: GalleryItem = {
-      id: Date.now().toString(),
-      title: formData.title,
-      description: formData.description,
-      image: formData.image,
-      customerName: formData.customerName || undefined,
-      tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-      createdAt: new Date(),
-    }
+    setUploading(true)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return
+      }
 
-    setItems([newItem, ...items])
-    resetForm()
+      const response = await fetch('/api/gallery', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify({
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          customerName: formData.customerName.trim() || null,
+          tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+          imageFileId: formData.imageFileId,
+        })
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        await fetchGalleryItems()
+        resetForm()
+        alert('Gallery item added successfully!')
+      } else {
+        alert(data.error || 'Failed to add gallery item')
+      }
+    } catch (error) {
+      console.error('Add gallery item error:', error)
+      alert('Failed to add gallery item')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleEdit = (item: GalleryItem) => {
@@ -59,38 +170,95 @@ export default function AdminGalleryPage() {
     setFormData({
       title: item.title,
       description: item.description,
-      image: item.image,
+      imageFileId: item.images?.[0]?.id || "",
       customerName: item.customerName || "",
       tags: item.tags.join(", "),
     })
   }
 
-  const handleUpdate = () => {
-    if (!formData.title || !formData.description || !formData.image) {
+  const handleUpdate = async () => {
+    if (!formData.title || !formData.description || !editingId) {
       alert("Please fill in all required fields")
       return
     }
 
-    setItems(
-      items.map((item) =>
-        item.id === editingId
-          ? {
-              ...item,
-              title: formData.title,
-              description: formData.description,
-              image: formData.image,
-              customerName: formData.customerName || undefined,
-              tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-            }
-          : item
-      )
-    )
-    resetForm()
+    setUpdating(true)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return
+      }
+
+      const updateData: any = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        customerName: formData.customerName.trim() || null,
+        tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      }
+
+      // Only include imageFileId if a new image was uploaded
+      if (formData.imageFileId) {
+        updateData.imageFileId = formData.imageFileId
+      }
+
+      const response = await fetch(`/api/gallery/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify(updateData)
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        await fetchGalleryItems()
+        resetForm()
+        alert('Gallery item updated successfully!')
+      } else {
+        alert(data.error || 'Failed to update gallery item')
+      }
+    } catch (error) {
+      console.error('Update gallery item error:', error)
+      alert('Failed to update gallery item')
+    } finally {
+      setUpdating(false)
+    }
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this gallery item?")) {
-      setItems(items.filter((item) => item.id !== id))
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this gallery item?")) {
+      return
+    }
+
+    setDeleting(id)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return
+      }
+
+      const response = await fetch(`/api/gallery/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        }
+      })
+
+      if (response.ok) {
+        await fetchGalleryItems()
+        alert('Gallery item deleted successfully!')
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to delete gallery item')
+      }
+    } catch (error) {
+      console.error('Delete gallery item error:', error)
+      alert('Failed to delete gallery item')
+    } finally {
+      setDeleting(null)
     }
   }
 
@@ -131,12 +299,27 @@ export default function AdminGalleryPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Image URL *</label>
+              <label className="text-sm font-medium mb-2 block">Image *</label>
               <Input
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                placeholder="/image.jpg"
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    const fileId = await handleFileUpload(file)
+                    if (fileId) {
+                      setFormData({ ...formData, imageFileId: fileId })
+                    }
+                  }
+                }}
+                disabled={uploading}
               />
+              {uploading && (
+                <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+              )}
+              {formData.imageFileId && !uploading && (
+                <p className="text-sm text-green-600 mt-1">✓ Image uploaded</p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Customer Name (optional)</label>
@@ -155,8 +338,17 @@ export default function AdminGalleryPage() {
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleAdd}>Add Item</Button>
-              <Button variant="outline" onClick={resetForm}>
+              <Button onClick={handleAdd} disabled={uploading}>
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Item"
+                )}
+              </Button>
+              <Button variant="outline" onClick={resetForm} disabled={uploading}>
                 Cancel
               </Button>
             </div>
@@ -164,39 +356,51 @@ export default function AdminGalleryPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => (
-          <Card key={item.id}>
-            <CardContent className="p-0">
-              <div className="relative w-full aspect-square overflow-hidden bg-muted">
-                <img
-                  src={item.image || "/placeholder.svg"}
-                  alt={item.title}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              <div className="p-4 space-y-2">
-                <div className="flex items-start justify-between">
-                  <h3 className="font-semibold text-lg line-clamp-1">{item.title}</h3>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleEdit(item)}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {items.map((item) => (
+            <Card key={item.id}>
+              <CardContent className="p-0">
+                <div className="relative w-full aspect-square overflow-hidden bg-muted">
+                  <Image
+                    src={item.image || "/gallery/placeholder.svg"}
+                    alt={item.title}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
+                <div className="p-4 space-y-2">
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-semibold text-lg line-clamp-1">{item.title}</h3>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEdit(item)}
+                        disabled={deleting === item.id}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deleting === item.id || deleting !== null}
+                      >
+                        {deleting === item.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
                 {item.customerName && (
                   <p className="text-xs text-muted-foreground">Customer: {item.customerName}</p>
@@ -208,14 +412,15 @@ export default function AdminGalleryPage() {
                     </Badge>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Added: {item.createdAt.toLocaleDateString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  <p className="text-xs text-muted-foreground">
+                    Added: {new Date(item.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {editingId && (
         <Card className="mb-6">
@@ -241,12 +446,27 @@ export default function AdminGalleryPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Image URL *</label>
+              <label className="text-sm font-medium mb-2 block">Image (optional - leave empty to keep current)</label>
               <Input
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                placeholder="/image.jpg"
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    const fileId = await handleFileUpload(file)
+                    if (fileId) {
+                      setFormData({ ...formData, imageFileId: fileId })
+                    }
+                  }
+                }}
+                disabled={uploading || updating}
               />
+              {uploading && (
+                <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+              )}
+              {formData.imageFileId && !uploading && (
+                <p className="text-sm text-green-600 mt-1">✓ New image uploaded</p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Customer Name (optional)</label>
@@ -265,8 +485,17 @@ export default function AdminGalleryPage() {
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleUpdate}>Update Item</Button>
-              <Button variant="outline" onClick={resetForm}>
+              <Button onClick={handleUpdate} disabled={updating}>
+                {updating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Item"
+                )}
+              </Button>
+              <Button variant="outline" onClick={resetForm} disabled={updating}>
                 Cancel
               </Button>
             </div>

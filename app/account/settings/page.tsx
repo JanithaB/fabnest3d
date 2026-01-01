@@ -11,12 +11,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/lib/auth"
-import { ArrowLeft, Save } from "lucide-react"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, _hasHydrated } = useAuth()
   const { toast } = useToast()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -25,13 +25,25 @@ export default function SettingsPage() {
   const [marketingEmails, setMarketingEmails] = useState(false)
 
   useEffect(() => {
+    // Wait for Zustand to hydrate from localStorage before checking auth
+    if (!_hasHydrated) return
+
     if (!isAuthenticated) {
-      router.push("/login")
+      router.push("/auth/login")
     } else if (user) {
       setName(user.name)
       setEmail(user.email)
     }
-  }, [isAuthenticated, user, router])
+  }, [_hasHydrated, isAuthenticated, user, router])
+
+  // Show loading while Zustand hydrates from localStorage
+  if (!_hasHydrated) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   if (!isAuthenticated || !user) {
     return null

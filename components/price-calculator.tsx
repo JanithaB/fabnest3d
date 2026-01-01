@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Product } from "@/lib/types"
 import { useRouter } from "next/navigation"
 import { Separator } from "@/components/ui/separator"
+import { formatCurrency } from "@/lib/currency"
 
 interface PriceCalculatorProps {
   product: Product
@@ -115,7 +116,7 @@ export function PriceCalculator({ product }: PriceCalculatorProps) {
         <div className="space-y-3 bg-muted/50 rounded-lg p-4">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Unit Price:</span>
-            <span className="font-medium">${unitPrice.toFixed(2)}</span>
+            <span className="font-medium">{formatCurrency(unitPrice)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Quantity:</span>
@@ -124,7 +125,7 @@ export function PriceCalculator({ product }: PriceCalculatorProps) {
           <Separator />
           <div className="flex justify-between text-lg font-bold">
             <span>Total:</span>
-            <span className="text-primary">${totalPrice.toFixed(2)}</span>
+            <span className="text-primary">{formatCurrency(totalPrice)}</span>
           </div>
         </div>
 

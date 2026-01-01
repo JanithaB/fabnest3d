@@ -1,7 +1,12 @@
+"use client"
+
 import Link from "next/link"
 import { Logo } from "@/components/logo"
+import { useAuth } from "@/lib/auth"
 
 export function Footer() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === "admin"
   return (
     <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -18,26 +23,30 @@ export function Footer() {
           <div className="space-y-4">
             <h3 className="font-semibold">Products</h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/gallery" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Gallery
-                </Link>
-              </li>
-              <li>
-                <Link href="/shop/products" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Marketplace
-                </Link>
-              </li>
-              <li>
-                <Link href="/shop/upload" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Upload Design
-                </Link>
-              </li>
-              <li>
-                <Link href="/shop/cart" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Cart
-                </Link>
-              </li>
+              {!isAdmin && (
+                <>
+                  <li>
+                    <Link href="/gallery" className="text-muted-foreground hover:text-foreground transition-colors">
+                      Gallery
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/shop/products" className="text-muted-foreground hover:text-foreground transition-colors">
+                      Marketplace
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/shop/upload" className="text-muted-foreground hover:text-foreground transition-colors">
+                      Upload Design
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/shop/cart" className="text-muted-foreground hover:text-foreground transition-colors">
+                      Cart
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
 

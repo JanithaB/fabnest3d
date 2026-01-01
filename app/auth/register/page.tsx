@@ -41,7 +41,14 @@ export default function SignupPage() {
     const result = await signup(email, password, name)
 
     if (result.success) {
-      router.push("/account")
+      // Get the user from the store after signup completes
+      const loggedInUser = useAuth.getState().user
+      
+      if (loggedInUser?.role === "admin") {
+        router.push("/admin")
+      } else {
+        router.push("/account")
+      }
     } else {
       setError(result.error || "Signup failed")
     }

@@ -13,80 +13,110 @@ export type User = {
 
 type AuthState = {
   user: User | null
+  token: string | null
   isAuthenticated: boolean
+  _hasHydrated: boolean
+  setHasHydrated: (state: boolean) => void
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
 }
 
-// Mock users database
-const MOCK_USERS: (User & { password: string })[] = [
-  {
-    id: "1",
-    email: "admin@fabnest3d.com",
-    password: "admin123",
-    name: "Admin User",
-    role: "admin",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    email: "user@example.com",
-    password: "user123",
-    name: "John Doe",
-    role: "user",
-    createdAt: new Date().toISOString(),
-  },
-]
-
 export const useAuth = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
+      _hasHydrated: false,
+      setHasHydrated: (state) => {
+        set({
+          _hasHydrated: state
+        })
+      },
       login: async (email: string, password: string) => {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+          })
 
-        const user = MOCK_USERS.find((u) => u.email === email && u.password === password)
+          let data
+          try {
+            data = await response.json()
+          } catch (parseError) {
+            console.error('Failed to parse response:', parseError)
+            return { success: false, error: 'Invalid response from server' }
+          }
 
-        if (user) {
-          const { password: _, ...userWithoutPassword } = user
-          set({ user: userWithoutPassword, isAuthenticated: true })
+          if (!response.ok) {
+            return { success: false, error: data.error || 'Login failed' }
+          }
+
+          // Validate response data
+          if (!data.user || !data.token) {
+            console.error('Invalid response data:', data)
+            return { success: false, error: 'Invalid response from server' }
+          }
+
+          // Store user and token
+          set({
+            user: data.user,
+            token: data.token,
+            isAuthenticated: true,
+          })
+
           return { success: true }
+        } catch (error: any) {
+          console.error('Login error:', error)
+          return { success: false, error: error.message || 'Network error. Please try again.' }
         }
-
-        return { success: false, error: "Invalid email or password" }
       },
       signup: async (email: string, password: string, name: string) => {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        try {
+          const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password, name }),
+          })
 
-        // Check if user already exists
-        const existingUser = MOCK_USERS.find((u) => u.email === email)
-        if (existingUser) {
-          return { success: false, error: "Email already registered" }
+          const data = await response.json()
+
+          if (!response.ok) {
+            return { success: false, error: data.error || 'Registration failed' }
+          }
+
+          // Store user and token
+          set({
+            user: data.user,
+            token: data.token,
+            isAuthenticated: true,
+          })
+
+          return { success: true }
+        } catch (error: any) {
+          console.error('Registration error:', error)
+          return { success: false, error: 'Network error. Please try again.' }
         }
-
-        // Create new user
-        const newUser: User = {
-          id: String(MOCK_USERS.length + 1),
-          email,
-          name,
-          role: "user",
-          createdAt: new Date().toISOString(),
-        }
-
-        MOCK_USERS.push({ ...newUser, password })
-        set({ user: newUser, isAuthenticated: true })
-        return { success: true }
       },
       logout: () => {
-        set({ user: null, isAuthenticated: false })
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+        })
       },
     }),
     {
       name: "auth-storage",
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     },
   ),
 )
