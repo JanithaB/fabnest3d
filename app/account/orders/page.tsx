@@ -381,15 +381,6 @@ export default function OrdersPage() {
                               </div>
                             </>
                           )}
-                          {quote.adminName && (
-                            <>
-                              <span className="hidden sm:inline text-muted-foreground">•</span>
-                              <div>
-                                <span className="text-muted-foreground">Quoted by: </span>
-                                <span className="font-medium">{quote.adminName}</span>
-                              </div>
-                            </>
-                          )}
                         </div>
                         {quote.status === "quoted" && quote.requestedPrice && (
                           <div className="mt-4 pt-4 border-t space-y-3">
@@ -413,11 +404,6 @@ export default function OrdersPage() {
                                   <span className="font-bold text-lg text-primary">{formatCurrency(quote.requestedPrice)}</span>
                                 </div>
                               </div>
-                              {quote.adminName && (
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  Quoted by: {quote.adminName}
-                                </p>
-                              )}
                               {quote.piSent && (
                                 <p className="text-xs text-muted-foreground mt-1">
                                   A Proforma Invoice has been sent to your email.

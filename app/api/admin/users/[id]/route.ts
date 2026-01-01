@@ -99,6 +99,21 @@ export async function PUT(
           { status: 400 }
         )
       }
+      
+      // Prevent removing admin role from the last admin
+      if (existingUser.role === 'admin' && role === 'user') {
+        const adminCount = await prisma.user.count({
+          where: { role: 'admin' }
+        })
+        
+        if (adminCount <= 1) {
+          return NextResponse.json(
+            { error: 'Cannot remove admin role from the last admin user' },
+            { status: 400 }
+          )
+        }
+      }
+      
       updateData.role = role
     }
 
@@ -188,10 +203,30 @@ export async function DELETE(
       }
     }
 
-    // Delete user (cascade will handle related records)
+    // Get all custom files uploaded by this user to delete physical files
+    const customFiles = await prisma.customOrderFile.findMany({
+      where: { userId: id },
+      include: {
+        file: {
+          select: {
+            id: true,
+            path: true,
+          }
+        }
+      }
+    })
+
+    // Collect file paths to delete
+    const filePaths = customFiles.map(cf => cf.file.path)
+
+    // Delete user (cascade will handle CustomOrderFile and File records)
     await prisma.user.delete({
       where: { id }
     })
+
+    // Delete files from filesystem
+    const { deleteFilesFromDisk } = await import('@/lib/file-utils')
+    await deleteFilesFromDisk(filePaths)
 
     return NextResponse.json({
       success: true,

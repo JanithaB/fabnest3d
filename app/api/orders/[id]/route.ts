@@ -212,3 +212,80 @@ export async function PUT(
   }
 }
 
+// DELETE /api/orders/[id] - Delete order (admin only)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const admin = requireAdmin(request)
+    const { id } = await params
+
+    // Check if order exists and get associated custom files
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            customFile: {
+              include: {
+                file: {
+                  select: {
+                    id: true,
+                    path: true,
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
+    }
+
+    // Collect file paths from custom order files
+    const filePaths: string[] = []
+    for (const item of order.items) {
+      if (item.customFile?.file) {
+        filePaths.push(item.customFile.file.path)
+      }
+    }
+
+    // Delete order (cascade will handle OrderItem, CustomOrderFile, and File records)
+    await prisma.order.delete({
+      where: { id }
+    })
+
+    // Delete files from filesystem
+    if (filePaths.length > 0) {
+      const { deleteFilesFromDisk } = await import('@/lib/file-utils')
+      await deleteFilesFromDisk(filePaths)
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Order deleted successfully'
+    })
+  } catch (error: any) {
+    console.error('Delete order error:', error)
+    
+    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.message === 'Unauthorized' ? 401 : 403 }
+      )
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to delete order' },
+      { status: 500 }
+    )
+  }
+}
+

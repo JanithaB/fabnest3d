@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { type OrderStatus } from "@/lib/orders"
 import { useAuth } from "@/lib/auth"
-import { Search, Eye, Loader2, Check } from "lucide-react"
+import { Search, Eye, Loader2, Check, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { formatCurrency } from "@/lib/currency"
 
@@ -29,6 +29,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
     fetchOrders()
@@ -85,6 +86,41 @@ export default function AdminOrdersPage() {
       alert('Failed to update order status. Please try again.')
     } finally {
       setUpdatingStatus(null)
+    }
+  }
+
+  const handleDelete = async (orderId: string, orderNumber: string) => {
+    if (!confirm(`Are you sure you want to delete order #${orderNumber}? This action cannot be undone and will delete all associated files.`)) {
+      return
+    }
+
+    setDeleting(orderId)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return
+      }
+
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        }
+      })
+
+      if (response.ok) {
+        await fetchOrders()
+        alert('Order deleted successfully!')
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to delete order')
+      }
+    } catch (error) {
+      console.error('Delete order error:', error)
+      alert('Failed to delete order')
+    } finally {
+      setDeleting(null)
     }
   }
 
@@ -195,10 +231,28 @@ export default function AdminOrdersPage() {
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         )}
                       </div>
-                      <Button variant="outline" size="icon" asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        asChild
+                        disabled={deleting === order.id}
+                      >
                         <Link href={`/admin/orders/${order.id}`}>
                           <Eye className="h-4 w-4" />
                         </Link>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(order.id, order.id.slice(0, 8))}
+                        disabled={deleting === order.id || deleting !== null || updatingStatus === order.id}
+                      >
+                        {deleting === order.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>

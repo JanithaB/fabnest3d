@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/auth"
-import { FileText, Download, Mail, Loader2 } from "lucide-react"
+import { FileText, Download, Mail, Loader2, Trash2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatCurrency } from "@/lib/currency"
 
@@ -18,6 +18,7 @@ type QuoteRequest = {
   status: "pending" | "quoted" | "accepted" | "rejected"
   requestedPrice: number | null
   adminNotes: string | null
+  adminName: string | null
   piSent: boolean
   piSentAt: string | null
   createdAt: string
@@ -49,6 +50,7 @@ export default function AdminQuoteRequestsPage() {
   const [price, setPrice] = useState("")
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
     fetchQuoteRequests()
@@ -147,6 +149,41 @@ export default function AdminQuoteRequestsPage() {
     }
   }
 
+  const handleDelete = async (id: string, filename: string) => {
+    if (!confirm(`Are you sure you want to delete this quote request for "${filename}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeleting(id)
+    try {
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        alert('Authentication required')
+        return
+      }
+
+      const response = await fetch(`/api/quote-requests/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`
+        }
+      })
+
+      if (response.ok) {
+        await fetchQuoteRequests()
+        alert('Quote request deleted successfully!')
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to delete quote request')
+      }
+    } catch (error) {
+      console.error('Delete quote request error:', error)
+      alert('Failed to delete quote request')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   const pendingQuotes = quoteRequests.filter(q => q.status === "pending")
   const quotedQuotes = quoteRequests.filter(q => q.status === "quoted")
   const allQuotes = quoteRequests
@@ -196,6 +233,8 @@ export default function AdminQuoteRequestsPage() {
                 quote={quote}
                 onDownload={() => handleDownloadFile(quote.customFile.file.id, quote.customFile.file.filename)}
                 onSendPI={() => handleOpenDialog(quote)}
+                onDelete={() => handleDelete(quote.id, quote.customFile.file.filename)}
+                deleting={deleting === quote.id}
               />
             ))
           )}
@@ -217,6 +256,8 @@ export default function AdminQuoteRequestsPage() {
                 quote={quote}
                 onDownload={() => handleDownloadFile(quote.customFile.file.id, quote.customFile.file.filename)}
                 onSendPI={() => handleOpenDialog(quote)}
+                onDelete={() => handleDelete(quote.id, quote.customFile.file.filename)}
+                deleting={deleting === quote.id}
               />
             ))
           )}
@@ -238,6 +279,8 @@ export default function AdminQuoteRequestsPage() {
                 quote={quote}
                 onDownload={() => handleDownloadFile(quote.customFile.file.id, quote.customFile.file.filename)}
                 onSendPI={() => handleOpenDialog(quote)}
+                onDelete={() => handleDelete(quote.id, quote.customFile.file.filename)}
+                deleting={deleting === quote.id}
               />
             ))
           )}
@@ -316,10 +359,14 @@ function QuoteRequestCard({
   quote,
   onDownload,
   onSendPI,
+  onDelete,
+  deleting = false,
 }: {
   quote: QuoteRequest
   onDownload: () => void
   onSendPI: () => void
+  onDelete: () => void
+  deleting?: boolean
 }) {
   const statusColors = {
     pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
@@ -395,24 +442,52 @@ function QuoteRequestCard({
                   </div>
                 </>
               )}
+              {quote.adminName && (
+                <>
+                  <span className="hidden sm:inline text-muted-foreground">•</span>
+                  <div>
+                    <span className="text-muted-foreground">Quoted by: </span>
+                    <span className="font-medium">{quote.adminName}</span>
+                  </div>
+                </>
+              )}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onDownload}>
+              <Button variant="outline" size="sm" onClick={onDownload} disabled={deleting}>
                 <Download className="mr-2 h-4 w-4" />
                 Download File
               </Button>
               {quote.status === "pending" && (
-                <Button size="sm" onClick={onSendPI}>
+                <Button size="sm" onClick={onSendPI} disabled={deleting}>
                   <Mail className="mr-2 h-4 w-4" />
                   Send PI
                 </Button>
               )}
               {quote.status === "quoted" && (
-                <Button variant="outline" size="sm" onClick={onSendPI}>
+                <Button variant="outline" size="sm" onClick={onSendPI} disabled={deleting}>
                   <Mail className="mr-2 h-4 w-4" />
                   Update & Resend PI
                 </Button>
               )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onDelete}
+                className="text-destructive hover:text-destructive"
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>

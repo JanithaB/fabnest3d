@@ -21,7 +21,9 @@ export async function POST(
       include: {
         user: { select: { id: true } },
         customFile: {
-          include: {
+          select: {
+            id: true,
+            orderItemId: true,
             file: { select: { id: true, filename: true } }
           }
         }
@@ -47,6 +49,15 @@ export async function POST(
     if (quoteRequest.status !== 'quoted' || !quoteRequest.requestedPrice) {
       return NextResponse.json(
         { error: 'Quote request must be quoted with a price before creating an order' },
+        { status: 400 }
+      )
+    }
+
+    // Prevent creating multiple orders from the same quote request
+    // Check if the custom file is already linked to an order item
+    if (quoteRequest.customFile.orderItemId) {
+      return NextResponse.json(
+        { error: 'An order has already been created for this quote request' },
         { status: 400 }
       )
     }

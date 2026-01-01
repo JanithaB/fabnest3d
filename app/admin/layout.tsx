@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { useAuth } from "@/lib/auth"
 import { AdminSidebar } from "@/components/admin-sidebar"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Loader2 } from "lucide-react"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -39,7 +40,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen">
       <AdminSidebar />
-      <main className="flex-1">{children}</main>
+      <div className="flex-1 flex flex-col">
+        <header className="h-16 border-b flex items-center justify-end px-6 bg-background">
+          <ThemeToggle />
+        </header>
+        <main className="flex-1">{children}</main>
+      </div>
     </div>
   )
 }

@@ -239,3 +239,50 @@ export async function PUT(
   }
 }
 
+// DELETE /api/quote-requests/[id] - Delete quote request (admin only)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const admin = requireAdmin(request)
+    const { id } = await params
+
+    // Check if quote request exists
+    const quoteRequest = await prisma.quoteRequest.findUnique({
+      where: { id }
+    })
+
+    if (!quoteRequest) {
+      return NextResponse.json(
+        { error: 'Quote request not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete quote request (cascade will handle related records)
+    await prisma.quoteRequest.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Quote request deleted successfully'
+    })
+  } catch (error: any) {
+    console.error('Delete quote request error:', error)
+    
+    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.message === 'Unauthorized' ? 401 : 403 }
+      )
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to delete quote request' },
+      { status: 500 }
+    )
+  }
+}
+

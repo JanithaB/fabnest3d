@@ -36,7 +36,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TechEffects />
-          <SnowfallEffect />
+          {/* <SnowfallEffect /> */}
           {children}
           <Toaster />
           <Analytics />

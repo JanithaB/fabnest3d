@@ -236,21 +236,39 @@ export async function DELETE(
     const fileIds = product.images.map(img => img.file.id)
     const filePaths = product.images.map(img => img.file.path)
 
-    // Delete product (cascade will handle ProductImage records, but File records remain)
+    // Delete product (cascade will handle ProductImage records)
     await prisma.product.delete({
       where: { id }
     })
 
-    // Delete File records (they're no longer needed)
-    await prisma.file.deleteMany({
-      where: {
-        id: { in: fileIds }
+    // Delete File records that are no longer referenced by any ProductImage
+    // (A file might be used by multiple products, so we check if it's still referenced)
+    const filesToDelete: string[] = []
+    for (let i = 0; i < fileIds.length; i++) {
+      const fileId = fileIds[i]
+      const stillReferenced = await prisma.productImage.count({
+        where: { fileId }
+      })
+      
+      if (stillReferenced === 0) {
+        // File is not referenced by any other product, safe to delete
+        try {
+          await prisma.file.delete({
+            where: { id: fileId }
+          })
+          // Only delete physical file if database record was successfully deleted
+          filesToDelete.push(filePaths[i])
+        } catch (err) {
+          console.error(`Failed to delete file record ${fileId}:`, err)
+        }
       }
-    })
+    }
 
-    // Delete files from filesystem
-    const { deleteFilesFromDisk } = await import('@/lib/file-utils')
-    await deleteFilesFromDisk(filePaths)
+    // Delete files from filesystem (only for files whose records were deleted)
+    if (filesToDelete.length > 0) {
+      const { deleteFilesFromDisk } = await import('@/lib/file-utils')
+      await deleteFilesFromDisk(filesToDelete)
+    }
 
     return NextResponse.json({
       success: true,
