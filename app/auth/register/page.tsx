@@ -47,7 +47,7 @@ export default function SignupPage() {
       if (loggedInUser?.role === "admin") {
         router.push("/admin")
       } else {
-        router.push("/account")
+        router.push("/shop/products")
       }
     } else {
       setError(result.error || "Signup failed")
@@ -57,24 +57,24 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader className="space-y-1 px-4 sm:px-6 pt-6 sm:pt-6">
           <div className="flex items-center justify-center mb-4">
-            <Box className="h-10 w-10 text-primary" />
+            <Box className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
-          <CardDescription className="text-center">Enter your information to get started</CardDescription>
+          <CardTitle className="text-xl sm:text-2xl font-bold text-center">Create an account</CardTitle>
+          <CardDescription className="text-center text-sm sm:text-base">Enter your information to get started</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-4 sm:px-6">
             {error && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="text-sm">{error}</AlertDescription>
               </Alert>
             )}
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name" className="text-sm sm:text-base">Full Name</Label>
               <Input
                 id="name"
                 type="text"
@@ -83,10 +83,11 @@ export default function SignupPage() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 disabled={isLoading}
+                className="h-10 sm:h-11 text-sm sm:text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -95,10 +96,11 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
+                className="h-10 sm:h-11 text-sm sm:text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -107,10 +109,11 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                className="h-10 sm:h-11 text-sm sm:text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-sm sm:text-base">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -119,15 +122,16 @@ export default function SignupPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                className="h-10 sm:h-11 text-sm sm:text-base"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+          <CardFooter className="flex flex-col gap-4 pt-6 px-4 sm:px-6 pb-6 sm:pb-6">
+            <Button type="submit" size="lg" className="w-full !px-6 !py-2" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Account
             </Button>
-            <div className="text-sm text-center text-muted-foreground">
+            <div className="text-xs sm:text-sm text-center text-muted-foreground">
               Already have an account?{" "}
               <Link href="/auth/login" className="text-primary hover:underline">
                 Sign in

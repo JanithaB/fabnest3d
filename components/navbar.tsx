@@ -10,11 +10,20 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Separator } from "@/components/ui/separator"
 import { Logo } from "@/components/logo"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { LogOut } from "lucide-react"
 
 export function Navbar() {
-  const { isAuthenticated, user } = useAuth()
+  const router = useRouter()
+  const { isAuthenticated, user, logout } = useAuth()
   const [open, setOpen] = useState(false)
   const isAdmin = user?.role === "admin"
+
+  const handleLogout = () => {
+    logout()
+    setOpen(false)
+    router.push("/")
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -149,6 +158,15 @@ export function Navbar() {
                           <Link href="/account/orders">My Orders</Link>
                         </Button>
                       )}
+                      <Separator className="my-2" />
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10" 
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Log out
+                      </Button>
                     </>
                   ) : (
                     <>
