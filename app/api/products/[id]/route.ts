@@ -3,6 +3,23 @@ import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-server'
 import { validateFloat, validateStringLength } from '@/lib/validation'
 
+// Helper function to handle API errors
+function handleApiError(error: any, defaultMessage: string): NextResponse {
+  console.error(defaultMessage, error)
+  
+  if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.message === 'Unauthorized' ? 401 : 403 }
+    )
+  }
+  
+  return NextResponse.json(
+    { error: defaultMessage },
+    { status: 500 }
+  )
+}
+
 // GET /api/products/[id] - Get single product
 export async function GET(
   request: NextRequest,
@@ -188,19 +205,7 @@ export async function PUT(
       }
     })
   } catch (error: any) {
-    console.error('Update product error:', error)
-    
-    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.message === 'Unauthorized' ? 401 : 403 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to update product' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to update product')
   }
 }
 
@@ -275,19 +280,7 @@ export async function DELETE(
       message: 'Product deleted successfully'
     })
   } catch (error: any) {
-    console.error('Delete product error:', error)
-    
-    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.message === 'Unauthorized' ? 401 : 403 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to delete product' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to delete product')
   }
 }
 

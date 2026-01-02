@@ -4,6 +4,46 @@ import { requireAuth, requireAdmin } from '@/lib/auth-server'
 import { validateFloat, validateStringLength } from '@/lib/validation'
 import { sendPIEmail } from '@/lib/email'
 
+// Helper function to handle API errors
+function handleApiError(error: any, defaultMessage: string): NextResponse {
+  console.error(defaultMessage, error)
+  
+  if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.message === 'Unauthorized' ? 401 : 403 }
+    )
+  }
+  
+  return NextResponse.json(
+    { error: defaultMessage },
+    { status: 500 }
+  )
+}
+
+// Helper for quote request include statement
+const quoteRequestInclude = {
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    }
+  },
+  customFile: {
+    include: {
+      file: {
+        select: {
+          id: true,
+          filename: true,
+          url: true,
+          size: true,
+        }
+      }
+    }
+  }
+}
+
 // GET /api/quote-requests/[id] - Get single quote request
 export async function GET(
   request: NextRequest,
@@ -16,13 +56,7 @@ export async function GET(
     const quoteRequest = await prisma.quoteRequest.findUnique({
       where: { id },
       include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          }
-        },
+        ...quoteRequestInclude,
         customFile: {
           include: {
             file: {
@@ -69,19 +103,7 @@ export async function GET(
       }
     })
   } catch (error: any) {
-    console.error('Get quote request error:', error)
-    
-    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.message === 'Unauthorized' ? 401 : 403 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to fetch quote request' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch quote request')
   }
 }
 
@@ -163,7 +185,13 @@ export async function PUT(
 
       // Store admin info who sent the PI
       updateData.adminId = admin.userId
-      updateData.adminName = admin.name || admin.email
+      
+      // Fetch admin name from database
+      const adminUser = await prisma.user.findUnique({
+        where: { id: admin.userId },
+        select: { name: true }
+      })
+      updateData.adminName = adminUser?.name || admin.email
 
       // Send email with PI to customer
       const emailResult = await sendPIEmail({
@@ -175,7 +203,7 @@ export async function PUT(
         quality: existingRequest.customFile.quality,
         price: priceForPI,
         adminNotes: updateData.adminNotes ?? existingRequest.adminNotes ?? undefined,
-        adminName: admin.name || admin.email,
+        adminName: updateData.adminName || admin.email,
       })
 
       if (emailResult.success) {
@@ -195,27 +223,7 @@ export async function PUT(
     const quoteRequest = await prisma.quoteRequest.update({
       where: { id },
       data: updateData,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          }
-        },
-        customFile: {
-          include: {
-            file: {
-              select: {
-                id: true,
-                filename: true,
-                url: true,
-                size: true,
-              }
-            }
-          }
-        }
-      }
+      include: quoteRequestInclude
     })
 
     return NextResponse.json({
@@ -223,19 +231,7 @@ export async function PUT(
       quoteRequest
     })
   } catch (error: any) {
-    console.error('Update quote request error:', error)
-    
-    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.message === 'Unauthorized' ? 401 : 403 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to update quote request' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to update quote request')
   }
 }
 
@@ -270,19 +266,7 @@ export async function DELETE(
       message: 'Quote request deleted successfully'
     })
   } catch (error: any) {
-    console.error('Delete quote request error:', error)
-    
-    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.message === 'Unauthorized' ? 401 : 403 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to delete quote request' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to delete quote request')
   }
 }
 

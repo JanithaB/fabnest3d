@@ -26,6 +26,130 @@ type Product = {
   }>
 }
 
+// Helper function to prepare product form data for API
+const prepareProductFormData = (formData: any) => ({
+  name: formData.name.trim(),
+  description: formData.description.trim(),
+  basePrice: parseFloat(formData.basePrice),
+  category: formData.category.trim() || "Uncategorized",
+  tags: formData.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean),
+})
+
+// File upload handler wrapper for products
+const createProductFileUploadHandler = (handleFileUpload: (file: File) => Promise<string | null>, setFormData: (data: any) => void, formData: any) => {
+  return async (file: File) => {
+    const fileId = await handleFileUpload(file)
+    if (fileId) {
+      setFormData({ ...formData, imageFileId: fileId })
+    }
+  }
+}
+
+// File upload input component for products
+const ProductFileUploadInput = ({ 
+  onFileSelect, 
+  disabled, 
+  uploading, 
+  hasFile 
+}: { 
+  onFileSelect: (file: File) => Promise<void>
+  disabled?: boolean
+  uploading?: boolean
+  hasFile?: boolean
+}) => (
+  <div>
+    <label className="text-sm font-medium mb-2 block">Image {hasFile ? '(optional - leave empty to keep current)' : '*'}</label>
+    <Input
+      type="file"
+      accept="image/*"
+      onChange={async (e) => {
+        const file = e.target.files?.[0]
+        if (file) {
+          await onFileSelect(file)
+        }
+      }}
+      disabled={disabled || uploading}
+    />
+    {uploading && (
+      <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+    )}
+    {hasFile && !uploading && (
+      <p className="text-sm text-green-600 mt-1">✓ {hasFile ? 'New image' : 'Image'} uploaded</p>
+    )}
+  </div>
+)
+
+// Product form fields component
+const ProductFormFields = ({
+  formData,
+  setFormData,
+  onFileSelect,
+  uploading,
+  isEdit = false
+}: {
+  formData: any
+  setFormData: (data: any) => void
+  onFileSelect: (file: File) => Promise<void>
+  uploading?: boolean
+  isEdit?: boolean
+}) => (
+  <>
+    <div>
+      <label className="text-sm font-medium mb-2 block">Product Name *</label>
+      <Input
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        placeholder="Geometric Vase"
+      />
+    </div>
+    <div>
+      <label className="text-sm font-medium mb-2 block">Description *</label>
+      <Textarea
+        value={formData.description}
+        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        placeholder="Product description..."
+        rows={3}
+      />
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <ProductFileUploadInput
+        onFileSelect={onFileSelect}
+        disabled={uploading}
+        uploading={uploading}
+        hasFile={isEdit}
+      />
+      <div>
+        <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
+        <Input
+          type="number"
+          step="0.01"
+          value={formData.basePrice}
+          onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
+          placeholder="22.50"
+        />
+      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <label className="text-sm font-medium mb-2 block">Category</label>
+        <Input
+          value={formData.category}
+          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          placeholder="Home Decor"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium mb-2 block">Tags (comma-separated)</label>
+        <Input
+          value={formData.tags}
+          onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+          placeholder="Popular, Home, Decorative"
+        />
+      </div>
+    </div>
+  </>
+)
+
 export default function AdminProductsPage() {
   const { token } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
@@ -146,11 +270,7 @@ export default function AdminProductsPage() {
           'Authorization': `Bearer ${currentToken}`
         },
         body: JSON.stringify({
-          name: formData.name.trim(),
-          description: formData.description.trim(),
-          basePrice: parseFloat(formData.basePrice),
-          category: formData.category.trim() || "Uncategorized",
-          tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+          ...prepareProductFormData(formData),
           imageFileId: formData.imageFileId,
         })
       })
@@ -197,13 +317,7 @@ export default function AdminProductsPage() {
         return
       }
 
-      const updateData: any = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        basePrice: parseFloat(formData.basePrice),
-        category: formData.category.trim() || "Uncategorized",
-        tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-      }
+      const updateData: any = prepareProductFormData(formData)
 
       // Only include imageFileId if a new image was uploaded
       if (formData.imageFileId) {
@@ -289,76 +403,13 @@ export default function AdminProductsPage() {
             <CardTitle>Add New Product</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Product Name *</label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Geometric Vase"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Description *</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Product description..."
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Image *</label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      const fileId = await handleFileUpload(file)
-                      if (fileId) {
-                        setFormData({ ...formData, imageFileId: fileId })
-                      }
-                    }
-                  }}
-                  disabled={uploading}
-                />
-                {uploading && (
-                  <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
-                )}
-                {formData.imageFileId && !uploading && (
-                  <p className="text-sm text-green-600 mt-1">✓ Image uploaded</p>
-                )}
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.basePrice}
-                  onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
-                  placeholder="22.50"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Category</label>
-                <Input
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="Home Decor"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Tags (comma-separated)</label>
-                <Input
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="Popular, Home, Decorative"
-                />
-              </div>
-            </div>
+            <ProductFormFields
+              formData={formData}
+              setFormData={setFormData}
+              onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
+              uploading={uploading}
+              isEdit={false}
+            />
             <div className="flex gap-2">
               <Button onClick={handleAdd} disabled={uploading}>
                 {uploading ? (
@@ -384,76 +435,13 @@ export default function AdminProductsPage() {
             <CardTitle>Edit Product</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Product Name *</label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Geometric Vase"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Description *</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Product description..."
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Image (optional - leave empty to keep current)</label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      const fileId = await handleFileUpload(file)
-                      if (fileId) {
-                        setFormData({ ...formData, imageFileId: fileId })
-                      }
-                    }
-                  }}
-                  disabled={uploading || updating}
-                />
-                {uploading && (
-                  <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
-                )}
-                {formData.imageFileId && !uploading && (
-                  <p className="text-sm text-green-600 mt-1">✓ New image uploaded</p>
-                )}
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.basePrice}
-                  onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
-                  placeholder="22.50"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Category</label>
-                <Input
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="Home Decor"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Tags (comma-separated)</label>
-                <Input
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="Popular, Home, Decorative"
-                />
-              </div>
-            </div>
+            <ProductFormFields
+              formData={formData}
+              setFormData={setFormData}
+              onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
+              uploading={uploading || updating}
+              isEdit={true}
+            />
             <div className="flex gap-2">
               <Button onClick={handleUpdate} disabled={updating}>
                 {updating ? (

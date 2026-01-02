@@ -27,7 +27,7 @@ Authenticates a user and returns a JWT token.
 ```json
 {
   "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token": "EXAMPLE_JWT_TOKEN_HERE",
   "user": {
     "id": "user_id",
     "email": "user@example.com",
@@ -61,7 +61,7 @@ Creates a new user account.
 ```json
 {
   "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token": "EXAMPLE_JWT_TOKEN_HERE",
   "user": {
     "id": "user_id",
     "email": "user@example.com",

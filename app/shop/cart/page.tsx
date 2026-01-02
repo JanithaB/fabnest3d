@@ -13,7 +13,7 @@ import { formatCurrency } from "@/lib/currency"
 export default function CartPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { items, removeItem, updateQuantity, getTotalPrice } = useCart()
+  const { items, removeItem, updateQuantity, getTotal } = useCart()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function CartPage() {
     )
   }
 
-  const subtotal = getTotalPrice()
+  const subtotal = getTotal()
   const shipping = subtotal > 100 ? 0 : 10
   const total = subtotal + shipping
 
@@ -68,7 +68,7 @@ export default function CartPage() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-lg mb-1">{item.name}</h3>
                       <p className="text-sm text-muted-foreground mb-2">
-                        {item.material} • {item.color}
+                        {item.material} • {item.size}
                       </p>
                       <p className="text-lg font-bold">{formatCurrency(item.price)}</p>
                     </div>

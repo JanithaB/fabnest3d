@@ -24,6 +24,7 @@ export async function POST(
           select: {
             id: true,
             orderItemId: true,
+            material: true,
             file: { select: { id: true, filename: true } }
           }
         }
