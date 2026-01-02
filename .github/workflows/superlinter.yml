@@ -22,4 +22,3 @@ jobs:
           TYPESCRIPT_STANDARD_TSCONFIG_FILE: tsconfig.json
           VALIDATE_TYPESCRIPT_STANDARD: false
           FILTER_REGEX_EXCLUDE: '.*\.md$|.*pnpm-lock\.yaml$'
-          YAML_CONFIG_FILE: .yamllint.yml
