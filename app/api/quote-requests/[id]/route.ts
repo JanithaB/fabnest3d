@@ -163,7 +163,13 @@ export async function PUT(
 
       // Store admin info who sent the PI
       updateData.adminId = admin.userId
-      updateData.adminName = admin.name || admin.email
+      
+      // Fetch admin name from database
+      const adminUser = await prisma.user.findUnique({
+        where: { id: admin.userId },
+        select: { name: true }
+      })
+      updateData.adminName = adminUser?.name || admin.email
 
       // Send email with PI to customer
       const emailResult = await sendPIEmail({
@@ -175,7 +181,7 @@ export async function PUT(
         quality: existingRequest.customFile.quality,
         price: priceForPI,
         adminNotes: updateData.adminNotes ?? existingRequest.adminNotes ?? undefined,
-        adminName: admin.name || admin.email,
+        adminName: updateData.adminName || admin.email,
       })
 
       if (emailResult.success) {

@@ -1,6 +1,9 @@
 name: Super-Linter
 
-on: push
+on: 
+  push:
+    branches:
+      - dev
 
 jobs:
   super-lint:
@@ -13,5 +16,5 @@ jobs:
       - name: Run Super-Linter
         uses: github/super-linter@v4
         env:
-          DEFAULT_BRANCH: main
+          DEFAULT_BRANCH: dev
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
