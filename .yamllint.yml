@@ -1,0 +1,12 @@
+extends: default
+
+rules:
+  document-start: disable
+  braces:
+    max-spaces-inside: 2
+    min-spaces-inside: 0
+  line-length: disable
+
+ignore: |
+  pnpm-lock.yaml
+

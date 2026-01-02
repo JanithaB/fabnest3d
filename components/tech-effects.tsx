@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export function TechEffects() {
+  const [isClient, setIsClient] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationFrameRef = useRef<number | undefined>(undefined)
   const particlesRef = useRef<Array<{
@@ -14,6 +15,10 @@ export function TechEffects() {
     opacity: number
   }>>([])
   const mouseRef = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -154,6 +159,8 @@ export function TechEffects() {
       }
     }
   }, [])
+
+  if (!isClient) return null
 
   return (
     <div 

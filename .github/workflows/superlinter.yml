@@ -1,3 +1,4 @@
+---
 name: Super-Linter
 
 on: 
@@ -21,4 +22,6 @@ jobs:
           TYPESCRIPT_STANDARD_TSCONFIG_FILE: tsconfig.json
           VALIDATE_TYPESCRIPT_STANDARD: false
           VALIDATE_MARKDOWN: false
-          FILTER_REGEX_EXCLUDE: '.*\.md$'
+          FILTER_REGEX_EXCLUDE: '.*\.md$|.*pnpm-lock\.yaml$'
+          VALIDATE_YAML: true
+          YAML_CONFIG_FILE: .yamllint.yml
