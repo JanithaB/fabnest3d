@@ -79,6 +79,77 @@ const ProductFileUploadInput = ({
   </div>
 )
 
+// Product form fields component
+const ProductFormFields = ({
+  formData,
+  setFormData,
+  onFileSelect,
+  uploading,
+  isEdit = false
+}: {
+  formData: any
+  setFormData: (data: any) => void
+  onFileSelect: (file: File) => Promise<void>
+  uploading?: boolean
+  isEdit?: boolean
+}) => (
+  <>
+    <div>
+      <label className="text-sm font-medium mb-2 block">Product Name *</label>
+      <Input
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        placeholder="Geometric Vase"
+      />
+    </div>
+    <div>
+      <label className="text-sm font-medium mb-2 block">Description *</label>
+      <Textarea
+        value={formData.description}
+        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        placeholder="Product description..."
+        rows={3}
+      />
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <ProductFileUploadInput
+        onFileSelect={onFileSelect}
+        disabled={uploading}
+        uploading={uploading}
+        hasFile={isEdit}
+      />
+      <div>
+        <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
+        <Input
+          type="number"
+          step="0.01"
+          value={formData.basePrice}
+          onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
+          placeholder="22.50"
+        />
+      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <label className="text-sm font-medium mb-2 block">Category</label>
+        <Input
+          value={formData.category}
+          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          placeholder="Home Decor"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium mb-2 block">Tags (comma-separated)</label>
+        <Input
+          value={formData.tags}
+          onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+          placeholder="Popular, Home, Decorative"
+        />
+      </div>
+    </div>
+  </>
+)
+
 export default function AdminProductsPage() {
   const { token } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
@@ -332,59 +403,13 @@ export default function AdminProductsPage() {
             <CardTitle>Add New Product</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Product Name *</label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Geometric Vase"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Description *</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Product description..."
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <ProductFileUploadInput
-                onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
-                disabled={uploading}
-                uploading={uploading}
-                hasFile={false}
-              />
-              <div>
-                <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.basePrice}
-                  onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
-                  placeholder="22.50"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Category</label>
-                <Input
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="Home Decor"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Tags (comma-separated)</label>
-                <Input
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="Popular, Home, Decorative"
-                />
-              </div>
-            </div>
+            <ProductFormFields
+              formData={formData}
+              setFormData={setFormData}
+              onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
+              uploading={uploading}
+              isEdit={false}
+            />
             <div className="flex gap-2">
               <Button onClick={handleAdd} disabled={uploading}>
                 {uploading ? (
@@ -410,59 +435,13 @@ export default function AdminProductsPage() {
             <CardTitle>Edit Product</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Product Name *</label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Geometric Vase"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Description *</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Product description..."
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <ProductFileUploadInput
-                onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
-                disabled={uploading || updating}
-                uploading={uploading}
-                hasFile={true}
-              />
-              <div>
-                <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.basePrice}
-                  onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
-                  placeholder="22.50"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Category</label>
-                <Input
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="Home Decor"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Tags (comma-separated)</label>
-                <Input
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="Popular, Home, Decorative"
-                />
-              </div>
-            </div>
+            <ProductFormFields
+              formData={formData}
+              setFormData={setFormData}
+              onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
+              uploading={uploading || updating}
+              isEdit={true}
+            />
             <div className="flex gap-2">
               <Button onClick={handleUpdate} disabled={updating}>
                 {updating ? (

@@ -12,6 +12,29 @@ import { Logo } from "@/components/logo"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { LogOut } from "lucide-react"
+import { LucideIcon } from "lucide-react"
+
+// Mobile menu navigation link component
+const MobileNavLink = ({ 
+  href, 
+  icon: Icon, 
+  children, 
+  onClose 
+}: { 
+  href: string
+  icon: LucideIcon
+  children: React.ReactNode
+  onClose: () => void
+}) => (
+  <Link
+    href={href}
+    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+    onClick={onClose}
+  >
+    <Icon className="h-5 w-5" />
+    {children}
+  </Link>
+)
 
 export function Navbar() {
   const router = useRouter()
@@ -109,38 +132,18 @@ export function Navbar() {
                 <div className="px-4 space-y-1">
                   {!isAdmin && (
                     <>
-                      <Link
-                        href="/gallery"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                        onClick={() => setOpen(false)}
-                      >
-                        <Image className="h-5 w-5" />
+                      <MobileNavLink href="/gallery" icon={Image} onClose={() => setOpen(false)}>
                         Gallery
-                      </Link>
-                      <Link
-                        href="/shop/products"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                        onClick={() => setOpen(false)}
-                      >
-                        <ShoppingBag className="h-5 w-5" />
+                      </MobileNavLink>
+                      <MobileNavLink href="/shop/products" icon={ShoppingBag} onClose={() => setOpen(false)}>
                         Marketplace
-                      </Link>
-                      <Link
-                        href="/shop/upload"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                        onClick={() => setOpen(false)}
-                      >
-                        <Upload className="h-5 w-5" />
+                      </MobileNavLink>
+                      <MobileNavLink href="/shop/upload" icon={Upload} onClose={() => setOpen(false)}>
                         Upload
-                      </Link>
-                      <Link
-                        href="/shop/cart"
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                        onClick={() => setOpen(false)}
-                      >
-                        <ShoppingCart className="h-5 w-5" />
+                      </MobileNavLink>
+                      <MobileNavLink href="/shop/cart" icon={ShoppingCart} onClose={() => setOpen(false)}>
                         Cart
-                      </Link>
+                      </MobileNavLink>
                     </>
                   )}
                 </div>
