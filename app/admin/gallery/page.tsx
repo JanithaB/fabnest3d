@@ -26,6 +26,115 @@ type GalleryItem = {
   updatedAt: string
 }
 
+// Helper function to prepare form data for API
+const prepareFormData = (formData: any) => ({
+  title: formData.title.trim(),
+  description: formData.description.trim(),
+  customerName: formData.customerName.trim() || null,
+  tags: formData.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean),
+})
+
+// File upload handler wrapper
+const createFileUploadHandler = (handleFileUpload: (file: File) => Promise<string | null>, setFormData: (data: any) => void, formData: any) => {
+  return async (file: File) => {
+    const fileId = await handleFileUpload(file)
+    if (fileId) {
+      setFormData({ ...formData, imageFileId: fileId })
+    }
+  }
+}
+
+// File upload input component
+const FileUploadInput = ({ 
+  onFileSelect, 
+  disabled, 
+  uploading, 
+  hasFile 
+}: { 
+  onFileSelect: (file: File) => Promise<void>
+  disabled?: boolean
+  uploading?: boolean
+  hasFile?: boolean
+}) => (
+  <div>
+    <label className="text-sm font-medium mb-2 block">Image {hasFile ? '(optional - leave empty to keep current)' : '*'}</label>
+    <Input
+      type="file"
+      accept="image/*"
+      onChange={async (e) => {
+        const file = e.target.files?.[0]
+        if (file) {
+          await onFileSelect(file)
+        }
+      }}
+      disabled={disabled || uploading}
+    />
+    {uploading && (
+      <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+    )}
+    {hasFile && !uploading && (
+      <p className="text-sm text-green-600 mt-1">✓ {hasFile ? 'New image' : 'Image'} uploaded</p>
+    )}
+  </div>
+)
+
+// Form fields component for gallery item
+const GalleryFormFields = ({
+  formData,
+  setFormData,
+  onFileSelect,
+  uploading,
+  isEdit = false
+}: {
+  formData: any
+  setFormData: (data: any) => void
+  onFileSelect: (file: File) => Promise<void>
+  uploading?: boolean
+  isEdit?: boolean
+}) => (
+  <>
+    <div>
+      <label className="text-sm font-medium mb-2 block">Title *</label>
+      <Input
+        value={formData.title}
+        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+        placeholder="Custom Architectural Model"
+      />
+    </div>
+    <div>
+      <label className="text-sm font-medium mb-2 block">Description *</label>
+      <Textarea
+        value={formData.description}
+        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        placeholder="Detailed description of the work..."
+        rows={3}
+      />
+    </div>
+    <FileUploadInput
+      onFileSelect={onFileSelect}
+      disabled={uploading}
+      uploading={uploading}
+      hasFile={isEdit}
+    />
+    <div>
+      <label className="text-sm font-medium mb-2 block">Customer Name (optional)</label>
+      <Input
+        value={formData.customerName}
+        onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+        placeholder="Customer or Company Name"
+      />
+    </div>
+    <div>
+      <label className="text-sm font-medium mb-2 block">Tags (comma-separated)</label>
+      <Input
+        value={formData.tags}
+        onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+        placeholder="Architecture, Professional, Resin"
+      />
+    </div>
+  </>
+)
+
 export default function AdminGalleryPage() {
   const { token } = useAuth()
   const [items, setItems] = useState<GalleryItem[]>([])
@@ -141,10 +250,7 @@ export default function AdminGalleryPage() {
           'Authorization': `Bearer ${currentToken}`
         },
         body: JSON.stringify({
-          title: formData.title.trim(),
-          description: formData.description.trim(),
-          customerName: formData.customerName.trim() || null,
-          tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+          ...prepareFormData(formData),
           imageFileId: formData.imageFileId,
         })
       })
@@ -190,12 +296,7 @@ export default function AdminGalleryPage() {
         return
       }
 
-      const updateData: any = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        customerName: formData.customerName.trim() || null,
-        tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-      }
+      const updateData: any = prepareFormData(formData)
 
       // Only include imageFileId if a new image was uploaded
       if (formData.imageFileId) {
@@ -281,62 +382,13 @@ export default function AdminGalleryPage() {
             <CardTitle>Add Gallery Item</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Title *</label>
-              <Input
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Custom Architectural Model"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Description *</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Detailed description of the work..."
-                rows={3}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Image *</label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0]
-                  if (file) {
-                    const fileId = await handleFileUpload(file)
-                    if (fileId) {
-                      setFormData({ ...formData, imageFileId: fileId })
-                    }
-                  }
-                }}
-                disabled={uploading}
-              />
-              {uploading && (
-                <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
-              )}
-              {formData.imageFileId && !uploading && (
-                <p className="text-sm text-green-600 mt-1">✓ Image uploaded</p>
-              )}
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Customer Name (optional)</label>
-              <Input
-                value={formData.customerName}
-                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                placeholder="Customer or Company Name"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Tags (comma-separated)</label>
-              <Input
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                placeholder="Architecture, Professional, Resin"
-              />
-            </div>
+            <GalleryFormFields
+              formData={formData}
+              setFormData={setFormData}
+              onFileSelect={createFileUploadHandler(handleFileUpload, setFormData, formData)}
+              uploading={uploading}
+              isEdit={false}
+            />
             <div className="flex gap-2">
               <Button onClick={handleAdd} disabled={uploading}>
                 {uploading ? (
@@ -428,62 +480,13 @@ export default function AdminGalleryPage() {
             <CardTitle>Edit Gallery Item</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Title *</label>
-              <Input
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Custom Architectural Model"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Description *</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Detailed description of the work..."
-                rows={3}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Image (optional - leave empty to keep current)</label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0]
-                  if (file) {
-                    const fileId = await handleFileUpload(file)
-                    if (fileId) {
-                      setFormData({ ...formData, imageFileId: fileId })
-                    }
-                  }
-                }}
-                disabled={uploading || updating}
-              />
-              {uploading && (
-                <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
-              )}
-              {formData.imageFileId && !uploading && (
-                <p className="text-sm text-green-600 mt-1">✓ New image uploaded</p>
-              )}
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Customer Name (optional)</label>
-              <Input
-                value={formData.customerName}
-                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                placeholder="Customer or Company Name"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Tags (comma-separated)</label>
-              <Input
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                placeholder="Architecture, Professional, Resin"
-              />
-            </div>
+            <GalleryFormFields
+              formData={formData}
+              setFormData={setFormData}
+              onFileSelect={createFileUploadHandler(handleFileUpload, setFormData, formData)}
+              uploading={uploading || updating}
+              isEdit={true}
+            />
             <div className="flex gap-2">
               <Button onClick={handleUpdate} disabled={updating}>
                 {updating ? (

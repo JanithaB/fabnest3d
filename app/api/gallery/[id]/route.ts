@@ -3,6 +3,23 @@ import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-server'
 import { validateStringLength } from '@/lib/validation'
 
+// Helper function to handle API errors
+function handleApiError(error: any, defaultMessage: string): NextResponse {
+  console.error(defaultMessage, error)
+  
+  if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.message === 'Unauthorized' ? 401 : 403 }
+    )
+  }
+  
+  return NextResponse.json(
+    { error: defaultMessage },
+    { status: 500 }
+  )
+}
+
 // GET /api/gallery/[id] - Get single gallery item
 export async function GET(
   request: NextRequest,
@@ -163,19 +180,7 @@ export async function PUT(
       }
     })
   } catch (error: any) {
-    console.error('Update gallery item error:', error)
-    
-    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.message === 'Unauthorized' ? 401 : 403 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to update gallery item' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to update gallery item')
   }
 }
 
@@ -250,19 +255,7 @@ export async function DELETE(
       message: 'Gallery item deleted successfully'
     })
   } catch (error: any) {
-    console.error('Delete gallery item error:', error)
-    
-    if (error.message === 'Unauthorized' || error.message === 'Forbidden') {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.message === 'Unauthorized' ? 401 : 403 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to delete gallery item' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to delete gallery item')
   }
 }
 

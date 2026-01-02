@@ -14,6 +14,16 @@ import { formatCurrency } from "@/lib/currency"
 
 type OrderStatus = "pending" | "processing" | "printing" | "shipped" | "delivered" | "completed" | "cancelled"
 
+// Loading card component
+const LoadingCard = () => (
+  <Card>
+    <CardContent className="flex flex-col items-center justify-center py-12">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+      <p className="text-muted-foreground">Loading orders...</p>
+    </CardContent>
+  </Card>
+)
+
 const statusColors: Record<OrderStatus, string> = {
   pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
   processing: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
@@ -477,12 +487,7 @@ export default function OrdersPage() {
 
           <TabsContent value="active" className="space-y-4">
             {loading ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Loading orders...</p>
-                </CardContent>
-              </Card>
+              <LoadingCard />
             ) : activeOrders.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
@@ -503,12 +508,7 @@ export default function OrdersPage() {
 
           <TabsContent value="completed" className="space-y-4">
             {loading ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Loading orders...</p>
-                </CardContent>
-              </Card>
+              <LoadingCard />
             ) : completedOrders.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
@@ -524,12 +524,7 @@ export default function OrdersPage() {
 
           <TabsContent value="cancelled" className="space-y-4">
             {loading ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Loading orders...</p>
-                </CardContent>
-              </Card>
+              <LoadingCard />
             ) : cancelledOrders.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">

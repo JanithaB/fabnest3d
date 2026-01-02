@@ -18,3 +18,5 @@ jobs:
         env:
           DEFAULT_BRANCH: dev
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TYPESCRIPT_STANDARD_TSCONFIG_FILE: tsconfig.json
+          VALIDATE_TYPESCRIPT_STANDARD: false

@@ -188,6 +188,44 @@ export default function AdminQuoteRequestsPage() {
   const quotedQuotes = quoteRequests.filter(q => q.status === "quoted")
   const allQuotes = quoteRequests
 
+  // Helper component to render quote list with empty state
+  const QuoteList = ({ 
+    quotes, 
+    emptyTitle, 
+    emptyMessage 
+  }: { 
+    quotes: QuoteRequest[]
+    emptyTitle: string
+    emptyMessage: string
+  }) => {
+    if (quotes.length === 0) {
+      return (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">{emptyTitle}</h3>
+            <p className="text-muted-foreground">{emptyMessage}</p>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    return (
+      <>
+        {quotes.map((quote) => (
+          <QuoteRequestCard
+            key={quote.id}
+            quote={quote}
+            onDownload={() => handleDownloadFile(quote.customFile.file.id, quote.customFile.file.filename)}
+            onSendPI={() => handleOpenDialog(quote)}
+            onDelete={() => handleDelete(quote.id, quote.customFile.file.filename)}
+            deleting={deleting === quote.id}
+          />
+        ))}
+      </>
+    )
+  }
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
@@ -218,72 +256,27 @@ export default function AdminQuoteRequestsPage() {
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
-          {pendingQuotes.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
-                <p className="text-muted-foreground">All quote requests have been processed</p>
-              </CardContent>
-            </Card>
-          ) : (
-            pendingQuotes.map((quote) => (
-              <QuoteRequestCard
-                key={quote.id}
-                quote={quote}
-                onDownload={() => handleDownloadFile(quote.customFile.file.id, quote.customFile.file.filename)}
-                onSendPI={() => handleOpenDialog(quote)}
-                onDelete={() => handleDelete(quote.id, quote.customFile.file.filename)}
-                deleting={deleting === quote.id}
-              />
-            ))
-          )}
+          <QuoteList
+            quotes={pendingQuotes}
+            emptyTitle="No pending requests"
+            emptyMessage="All quote requests have been processed"
+          />
         </TabsContent>
 
         <TabsContent value="quoted" className="space-y-4">
-          {quotedQuotes.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No quoted requests</h3>
-                <p className="text-muted-foreground">No quotes have been sent yet</p>
-              </CardContent>
-            </Card>
-          ) : (
-            quotedQuotes.map((quote) => (
-              <QuoteRequestCard
-                key={quote.id}
-                quote={quote}
-                onDownload={() => handleDownloadFile(quote.customFile.file.id, quote.customFile.file.filename)}
-                onSendPI={() => handleOpenDialog(quote)}
-                onDelete={() => handleDelete(quote.id, quote.customFile.file.filename)}
-                deleting={deleting === quote.id}
-              />
-            ))
-          )}
+          <QuoteList
+            quotes={quotedQuotes}
+            emptyTitle="No quoted requests"
+            emptyMessage="No quotes have been sent yet"
+          />
         </TabsContent>
 
         <TabsContent value="all" className="space-y-4">
-          {allQuotes.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No quote requests</h3>
-                <p className="text-muted-foreground">No quote requests have been submitted</p>
-              </CardContent>
-            </Card>
-          ) : (
-            allQuotes.map((quote) => (
-              <QuoteRequestCard
-                key={quote.id}
-                quote={quote}
-                onDownload={() => handleDownloadFile(quote.customFile.file.id, quote.customFile.file.filename)}
-                onSendPI={() => handleOpenDialog(quote)}
-                onDelete={() => handleDelete(quote.id, quote.customFile.file.filename)}
-                deleting={deleting === quote.id}
-              />
-            ))
-          )}
+          <QuoteList
+            quotes={allQuotes}
+            emptyTitle="No quote requests"
+            emptyMessage="No quote requests have been submitted"
+          />
         </TabsContent>
       </Tabs>
 

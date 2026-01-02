@@ -26,6 +26,59 @@ type Product = {
   }>
 }
 
+// Helper function to prepare product form data for API
+const prepareProductFormData = (formData: any) => ({
+  name: formData.name.trim(),
+  description: formData.description.trim(),
+  basePrice: parseFloat(formData.basePrice),
+  category: formData.category.trim() || "Uncategorized",
+  tags: formData.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean),
+})
+
+// File upload handler wrapper for products
+const createProductFileUploadHandler = (handleFileUpload: (file: File) => Promise<string | null>, setFormData: (data: any) => void, formData: any) => {
+  return async (file: File) => {
+    const fileId = await handleFileUpload(file)
+    if (fileId) {
+      setFormData({ ...formData, imageFileId: fileId })
+    }
+  }
+}
+
+// File upload input component for products
+const ProductFileUploadInput = ({ 
+  onFileSelect, 
+  disabled, 
+  uploading, 
+  hasFile 
+}: { 
+  onFileSelect: (file: File) => Promise<void>
+  disabled?: boolean
+  uploading?: boolean
+  hasFile?: boolean
+}) => (
+  <div>
+    <label className="text-sm font-medium mb-2 block">Image {hasFile ? '(optional - leave empty to keep current)' : '*'}</label>
+    <Input
+      type="file"
+      accept="image/*"
+      onChange={async (e) => {
+        const file = e.target.files?.[0]
+        if (file) {
+          await onFileSelect(file)
+        }
+      }}
+      disabled={disabled || uploading}
+    />
+    {uploading && (
+      <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+    )}
+    {hasFile && !uploading && (
+      <p className="text-sm text-green-600 mt-1">✓ {hasFile ? 'New image' : 'Image'} uploaded</p>
+    )}
+  </div>
+)
+
 export default function AdminProductsPage() {
   const { token } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
@@ -146,11 +199,7 @@ export default function AdminProductsPage() {
           'Authorization': `Bearer ${currentToken}`
         },
         body: JSON.stringify({
-          name: formData.name.trim(),
-          description: formData.description.trim(),
-          basePrice: parseFloat(formData.basePrice),
-          category: formData.category.trim() || "Uncategorized",
-          tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+          ...prepareProductFormData(formData),
           imageFileId: formData.imageFileId,
         })
       })
@@ -197,13 +246,7 @@ export default function AdminProductsPage() {
         return
       }
 
-      const updateData: any = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        basePrice: parseFloat(formData.basePrice),
-        category: formData.category.trim() || "Uncategorized",
-        tags: formData.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-      }
+      const updateData: any = prepareProductFormData(formData)
 
       // Only include imageFileId if a new image was uploaded
       if (formData.imageFileId) {
@@ -307,29 +350,12 @@ export default function AdminProductsPage() {
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Image *</label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      const fileId = await handleFileUpload(file)
-                      if (fileId) {
-                        setFormData({ ...formData, imageFileId: fileId })
-                      }
-                    }
-                  }}
-                  disabled={uploading}
-                />
-                {uploading && (
-                  <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
-                )}
-                {formData.imageFileId && !uploading && (
-                  <p className="text-sm text-green-600 mt-1">✓ Image uploaded</p>
-                )}
-              </div>
+              <ProductFileUploadInput
+                onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
+                disabled={uploading}
+                uploading={uploading}
+                hasFile={false}
+              />
               <div>
                 <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
                 <Input
@@ -402,29 +428,12 @@ export default function AdminProductsPage() {
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Image (optional - leave empty to keep current)</label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      const fileId = await handleFileUpload(file)
-                      if (fileId) {
-                        setFormData({ ...formData, imageFileId: fileId })
-                      }
-                    }
-                  }}
-                  disabled={uploading || updating}
-                />
-                {uploading && (
-                  <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
-                )}
-                {formData.imageFileId && !uploading && (
-                  <p className="text-sm text-green-600 mt-1">✓ New image uploaded</p>
-                )}
-              </div>
+              <ProductFileUploadInput
+                onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
+                disabled={uploading || updating}
+                uploading={uploading}
+                hasFile={true}
+              />
               <div>
                 <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
                 <Input
