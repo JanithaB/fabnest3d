@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
       image: item.images?.[0]?.file?.url || '',
       images: (item.images || []).map((img: any) => ({
         id: img.id,
+        fileId: img.file?.id || '',
         url: img.file?.url || '',
         order: img.order,
       }))

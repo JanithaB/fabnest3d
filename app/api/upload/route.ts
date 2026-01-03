@@ -77,15 +77,22 @@ export async function POST(request: NextRequest) {
 
     // Validate file type
     const validImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+    const validImageExtensions = ['jpg', 'jpeg', 'png', 'webp']
     const validModelExtensions = ['stl', 'obj', '3mf', 'rar', 'zip'] // Added RAR and ZIP support
     const mimeType = file.type || 'application/octet-stream'
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
     
-    if (fileType === 'image' && !validImageTypes.includes(mimeType)) {
-      return NextResponse.json(
-        { error: 'Invalid image type. Use JPEG, PNG, or WebP' },
-        { status: 400 }
-      )
+    if (fileType === 'image') {
+      // Check both MIME type and file extension (extension as fallback)
+      const isValidMimeType = validImageTypes.includes(mimeType)
+      const isValidExtension = validImageExtensions.includes(ext)
+      
+      if (!isValidMimeType && !isValidExtension) {
+        return NextResponse.json(
+          { error: 'Invalid image type. Use JPEG, PNG, or WebP' },
+          { status: 400 }
+        )
+      }
     }
     
     if (fileType === 'model' && !validModelExtensions.includes(ext)) {

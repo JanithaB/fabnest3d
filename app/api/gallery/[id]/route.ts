@@ -60,6 +60,7 @@ export async function GET(
       image: galleryItem.images[0]?.file.url || '',
       images: galleryItem.images.map(img => ({
         id: img.id,
+        fileId: img.file.id,
         url: img.file.url,
         order: img.order,
       }))

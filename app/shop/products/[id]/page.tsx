@@ -18,9 +18,10 @@ type Product = {
   category: string
   tags: string[]
   images?: Array<{
-    file: {
-      url: string
-    }
+    id: string
+    url: string
+    isPrimary: boolean
+    order: number
   }>
 }
 
@@ -41,7 +42,8 @@ export default function ProductPage() {
       const response = await fetch(`/api/products/${id}`)
       if (response.ok) {
         const data = await response.json()
-        setProduct(data.product)
+        // API returns product directly, not wrapped in 'product' property
+        setProduct(data)
       } else if (response.status === 404) {
         setProduct(null)
       }
@@ -68,7 +70,8 @@ export default function ProductPage() {
     notFound()
   }
 
-  const productImage = product.images?.[0]?.file?.url || product.image || "/gallery/placeholder.svg"
+  // API returns images with 'url' directly, not nested in 'file'
+  const productImage = product.images?.[0]?.url || product.image || "/gallery/placeholder.svg"
 
   return (
     <main className="flex-1 py-12 px-4">
