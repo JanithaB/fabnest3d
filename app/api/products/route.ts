@@ -53,16 +53,21 @@ export async function GET(request: NextRequest) {
     ])
 
     // Transform to include primary image URL for backward compatibility
-    const productsWithImages = products.map(product => ({
-      ...product,
-      image: product.images.find(img => img.isPrimary)?.file.url || product.images[0]?.file.url || '',
-      images: product.images.map(img => ({
-        id: img.id,
-        url: img.file.url,
-        isPrimary: img.isPrimary,
-        order: img.order,
-      }))
-    }))
+    const productsWithImages = products.map(product => {
+      // Filter out images with missing files
+      const validImages = product.images.filter(img => img.file != null)
+      
+      return {
+        ...product,
+        image: validImages.find(img => img.isPrimary)?.file.url || validImages[0]?.file.url || '',
+        images: validImages.map(img => ({
+          id: img.id,
+          url: img.file.url,
+          isPrimary: img.isPrimary,
+          order: img.order,
+        }))
+      }
+    })
 
     return NextResponse.json({
       products: productsWithImages,

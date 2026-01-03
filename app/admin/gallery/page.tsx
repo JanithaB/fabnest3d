@@ -276,7 +276,7 @@ export default function AdminGalleryPage() {
     setFormData({
       title: item.title,
       description: item.description,
-      imageFileId: item.images?.[0]?.id || "",
+      imageFileId: (item.images as any)?.[0]?.fileId || "",
       customerName: item.customerName || "",
       tags: item.tags.join(", "),
     })

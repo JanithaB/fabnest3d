@@ -55,10 +55,13 @@ export async function GET(
     }
 
     // Transform to include primary image URL
+    // Filter out images with missing files
+    const validImages = product.images.filter(img => img.file != null)
+    
     return NextResponse.json({
       ...product,
-      image: product.images.find(img => img.isPrimary)?.file.url || product.images[0]?.file.url || '',
-      images: product.images.map(img => ({
+      image: validImages.find(img => img.isPrimary)?.file.url || validImages[0]?.file.url || '',
+      images: validImages.map(img => ({
         id: img.id,
         url: img.file.url,
         isPrimary: img.isPrimary,
