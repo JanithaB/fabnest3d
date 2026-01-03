@@ -5,6 +5,10 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    // Allow images from these domains/paths
+    remotePatterns: [],
+    // Allow local static files
+    domains: [],
   },
 }
 
