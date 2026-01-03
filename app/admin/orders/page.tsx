@@ -22,6 +22,16 @@ const statusColors: Record<OrderStatus, string> = {
   cancelled: "bg-red-500/10 text-red-700 dark:text-red-400",
 }
 
+const ORDER_STATUS_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "processing", label: "Processing" },
+  { value: "printing", label: "Printing" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+] as const
+
 export default function AdminOrdersPage() {
   const { token } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
