@@ -1,4 +1,4 @@
-
+---
 name: Deploy to Production (EC2)
 
 on:
@@ -22,7 +22,8 @@ jobs:
       
       - name: Deploy Application
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
 
           set -e
 

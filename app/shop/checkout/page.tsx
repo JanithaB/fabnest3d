@@ -7,16 +7,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, CreditCard } from "lucide-react"
+import { ShoppingCart } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/lib/cart"
 import { useAuth } from "@/lib/auth"
 import { formatCurrency } from "@/lib/currency"
+import { useToast } from "@/hooks/use-toast"
 
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, getSubtotal, getShipping, getTax, getTotal, clearCart } = useCart()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
+  const { toast } = useToast()
   const [isProcessing, setIsProcessing] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -28,16 +30,80 @@ export default function CheckoutPage() {
     }
   }, [user, router])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsProcessing(true)
 
-    // Simulate order processing
-    setTimeout(() => {
+    try {
+      const subtotal = getSubtotal()
+      const shipping = getShipping()
+      const tax = getTax()
+      const total = getTotal()
+
+      // Get token from auth store to ensure we have the latest value
+      const currentToken = useAuth.getState().token
+      if (!currentToken) {
+        throw new Error('Authentication required. Please log in.')
+      }
+
+      // Format items for API
+      const orderItems = items.map((item) => {
+        // Extract productId from cart item id (format: `${product.id}-${material}-${size}`)
+        // CUIDs don't contain dashes, so split by '-' and take all parts except last 2
+        const parts = item.id.split('-')
+        const productId = parts.length >= 3 ? parts.slice(0, -2).join('-') : null
+
+        return {
+          productId: productId || null,
+          productName: item.name,
+          material: item.material,
+          size: item.size,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          totalPrice: item.price * item.quantity,
+          color: null,
+          isCustom: false,
+        }
+      })
+
+      // Create order via API
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`,
+        },
+        body: JSON.stringify({
+          items: orderItems,
+          subtotal,
+          shipping,
+          tax,
+          total,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to place order')
+      }
+
+      // Success
       clearCart()
-      setIsProcessing(false)
+      toast({
+        title: "Order Placed",
+        description: "Your order has been placed successfully!",
+      })
       router.push("/account/orders")
-    }, 2000)
+    } catch (error: any) {
+      console.error('Order placement error:', error)
+      toast({
+        title: "Order Failed",
+        description: error.message || "Failed to place order. Please try again.",
+        variant: "destructive",
+      })
+      setIsProcessing(false)
+    }
   }
 
   if (!mounted) {
@@ -131,36 +197,8 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  <Separator className="my-6" />
-
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Payment Information
-                  </h3>
-
-                  <div className="space-y-4 p-4 border-2 border-dashed rounded-lg bg-muted/30">
-                    <p className="text-sm text-muted-foreground">
-                      Payment integration placeholder. In production, this would integrate with Stripe or another
-                      payment processor.
-                    </p>
-                    <div className="space-y-2">
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input id="cardNumber" placeholder="4242 4242 4242 4242" required />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="expiry">Expiry Date</Label>
-                        <Input id="expiry" placeholder="MM/YY" required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cvc">CVC</Label>
-                        <Input id="cvc" placeholder="123" required />
-                      </div>
-                    </div>
-                  </div>
-
                   <Button type="submit" size="lg" className="w-full mt-6" disabled={isProcessing}>
-                    {isProcessing ? "Processing..." : `Pay ${formatCurrency(total)}`}
+                    {isProcessing ? "Placing Order..." : "Order Now"}
                   </Button>
                 </form>
               </CardContent>
