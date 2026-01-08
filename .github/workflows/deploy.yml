@@ -26,7 +26,7 @@ jobs:
 
           set -e
 
-          export PATH=$PATH:/usr/local/bin
+          export PATH=$PATH:/home/ubuntu/.local/share/pnpm
 
           cd ${{ secrets.APP_DIR }}
 
