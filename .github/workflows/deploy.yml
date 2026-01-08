@@ -7,43 +7,40 @@ on:
 
 jobs:
   deploy:
-    name: Deploy on EC2
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
+        
+      - name: Deploy Application to EC2
+        uses: appleboy/ssh-action@v1
         with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
-      
-      - name: Deploy Application
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            echo "Navigating to application directory..."
+            cd ${{ secrets.APP_DIR }}
 
-          set -e
+            echo "Pulling latest changes from main branch..."
+            git pull origin main
 
-          cd ${{ secrets.APP_DIR }}
+            echo "Installing dependencies..."
+            pnpm install
 
-          echo "Pulling latest changes from main branch..."
-          git pull origin main
+            echo "Cleaning previous builds..."
+            pnpm run clean
 
-          echo "Installing dependencies..."
-          pnpm install
+            echo "Building the application..."
+            if pnpm run build; then
+              echo "Build succeeded. Restarting PM2 service..."
+              pm2 restart fabnest3d
+            else
+              echo "Build failed. Exiting deployment."
+              exit 1
+            fi
 
-          echo "Cleaning previous builds..."
-          pnpm run clean
-
-          echo "Building the application..."
-          if pnpm run build; then
-            echo "Build succeeded. Restarting PM2 service..."
-            pm2 restart fabnest3d
-          else
-            echo "Build failed. Exiting deployment."
-            exit 1
-          fi
-
-          echo "Deployment completed successfully."
-          EOF
+            echo "Deployment completed successfully."
