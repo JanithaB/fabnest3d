@@ -25,6 +25,8 @@ jobs:
 
           set -e
 
+          export PATH=$PATH:/usr/local/bin
+
           cd ${{ secrets.APP_DIR }}
 
           echo "Pulling latest changes from main branch..."
