@@ -79,10 +79,17 @@ export default function ProductPage() {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Product Image */}
           <div className="space-y-4">
-            <Card className="overflow-hidden border-2">
+            <Card className="overflow-hidden border-2 p-0">
               <CardContent className="p-0">
-                <div className="aspect-square relative bg-muted">
-                  <Image src={productImage} alt={product.name} fill className="object-cover" />
+                <div className="aspect-square relative w-full h-full">
+                  <Image 
+                    src={productImage} 
+                    alt={product.name} 
+                    fill 
+                    className="object-cover object-center" 
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    priority
+                  />
                 </div>
               </CardContent>
             </Card>
