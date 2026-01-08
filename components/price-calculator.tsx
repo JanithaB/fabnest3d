@@ -9,6 +9,9 @@ import type { Product } from "@/lib/types"
 import { useRouter } from "next/navigation"
 import { Separator } from "@/components/ui/separator"
 import { formatCurrency } from "@/lib/currency"
+import { useCart } from "@/lib/cart"
+import { useAuth } from "@/lib/auth"
+import { useToast } from "@/hooks/use-toast"
 
 interface PriceCalculatorProps {
   product: Product
@@ -35,6 +38,9 @@ const QUANTITIES = [1, 2, 3, 5, 10, 25, 50]
 
 export function PriceCalculator({ product }: PriceCalculatorProps) {
   const router = useRouter()
+  const { addItem } = useCart()
+  const { isAuthenticated, _hasHydrated } = useAuth()
+  const { toast } = useToast()
   const [material, setMaterial] = useState("pla")
   const [size, setSize] = useState("medium")
   const [quantity, setQuantity] = useState(1)
@@ -46,8 +52,48 @@ export function PriceCalculator({ product }: PriceCalculatorProps) {
   const totalPrice = unitPrice * quantity
 
   const handleOrderNow = () => {
-    // In a real app, this would add to cart/state
-    router.push("/checkout")
+    // Wait for auth to hydrate before checking
+    if (!_hasHydrated) {
+      return
+    }
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to add items to your cart.",
+        variant: "default",
+      })
+      router.push("/auth/login")
+      return
+    }
+
+    // Generate unique cart item ID based on product, material, and size
+    const cartItemId = `${product.id}-${material}-${size}`
+
+    // Get product image - handle both image field and images array (for extended product types)
+    const productImage = product.image || 
+      ((product as any).images && (product as any).images.length > 0 ? (product as any).images[0].url : null) || 
+      "/gallery/placeholder.svg"
+
+    // Add item to cart
+    addItem({
+      id: cartItemId,
+      name: product.name,
+      image: productImage,
+      material,
+      size,
+      quantity,
+      price: unitPrice,
+    })
+
+    toast({
+      title: "Added to Cart",
+      description: `${product.name} has been added to your cart.`,
+    })
+
+    // Redirect to checkout
+    router.push("/shop/checkout")
   }
 
   return (
