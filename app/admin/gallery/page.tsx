@@ -477,7 +477,7 @@ export default function AdminGalleryPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
-            <Card key={item.id}>
+            <Card key={item.id} className="p-0 gap-0 overflow-hidden">
               <CardContent className="p-0">
                 <div className="relative w-full aspect-square overflow-hidden bg-muted">
                   <Image

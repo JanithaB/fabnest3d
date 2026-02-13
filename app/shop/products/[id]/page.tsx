@@ -111,7 +111,7 @@ export default function ProductPage() {
             <Card className="overflow-hidden border-2 p-0 relative">
               <CardContent className="p-0">
                 <div
-                  className="aspect-square w-full max-w-full max-h-[70vh] sm:max-h-none relative overflow-hidden touch-pan-y select-none"
+                  className="aspect-square w-full relative overflow-hidden bg-muted touch-pan-y select-none"
                   onTouchStart={handleTouchStart}
                   onTouchEnd={handleTouchEnd}
                 >
