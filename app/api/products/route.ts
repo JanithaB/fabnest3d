@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
         image: validImages.find(img => img.isPrimary)?.file.url || validImages[0]?.file.url || '',
         images: validImages.map(img => ({
           id: img.id,
+          fileId: img.file.id,
           url: img.file.url,
           isPrimary: img.isPrimary,
           order: img.order,
@@ -90,7 +91,14 @@ export async function POST(request: NextRequest) {
     const admin = requireAdmin(request)
     const body = await request.json()
     
-    const { name, description, basePrice, category, tags, printTime, imageUrl, imageFileId } = body
+    const { name, description, basePrice, category, tags, printTime, imageUrl, imageFileId, imageFileIds, primaryImageIndex } = body
+
+    const fileIds = Array.isArray(imageFileIds) && imageFileIds.length > 0
+      ? imageFileIds.filter((id: string) => id && typeof id === 'string')
+      : imageFileId ? [imageFileId] : []
+    const primaryIndex = typeof primaryImageIndex === 'number' && primaryImageIndex >= 0 && primaryImageIndex < fileIds.length
+      ? primaryImageIndex
+      : 0
 
     // Validate required fields
     if (!name || !description || basePrice === undefined || !category) {
@@ -134,29 +142,21 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // If image provided, create product image record
-    if (imageFileId || imageUrl) {
-      let fileId = imageFileId
-      
-      // If imageUrl provided but no fileId, we need to handle it
-      // For now, we'll require fileId (file should be uploaded first via /api/upload)
-      if (!fileId && imageUrl) {
-        return NextResponse.json(
-          { error: 'Please upload image file first and provide imageFileId' },
-          { status: 400 }
-        )
-      }
-
-      if (fileId) {
-        await prisma.productImage.create({
-          data: {
-            productId: product.id,
-            fileId: fileId,
-            isPrimary: true,
-            order: 0,
-          }
-        })
-      }
+    // Create product image records (multiple images; first or primaryIndex is primary)
+    if (fileIds.length > 0) {
+      await prisma.productImage.createMany({
+        data: fileIds.map((fileId: string, index: number) => ({
+          productId: product.id,
+          fileId,
+          isPrimary: index === primaryIndex,
+          order: index,
+        }))
+      })
+    } else if (imageUrl && !imageFileId) {
+      return NextResponse.json(
+        { error: 'Please upload image file first and provide imageFileId or imageFileIds' },
+        { status: 400 }
+      )
     }
 
     // Fetch product with images

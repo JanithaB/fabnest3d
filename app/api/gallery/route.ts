@@ -85,7 +85,12 @@ export async function POST(request: NextRequest) {
     const admin = requireAdmin(request)
     const body = await request.json()
     
-    const { title, description, customerName, tags, imageFileId } = body
+    const { title, description, customerName, tags, imageFileId, imageFileIds } = body
+
+    // Support both single imageFileId and array imageFileIds
+    const fileIds = Array.isArray(imageFileIds) && imageFileIds.length > 0
+      ? imageFileIds.filter((id: string) => id && typeof id === 'string')
+      : imageFileId ? [imageFileId] : []
 
     // Validate required fields
     if (!title || !description) {
@@ -114,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create gallery item
-    const galleryItem = await (prisma.galleryItem.create as any)({
+    const galleryItem = await prisma.galleryItem.create({
       data: {
         title: title.trim(),
         description: description.trim(),
@@ -123,19 +128,19 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // If image provided, create gallery image record
-    if (imageFileId) {
-      await (prisma as any).galleryImage.create({
-        data: {
+    // Create gallery image records for each file (multiple images)
+    if (fileIds.length > 0) {
+      await prisma.galleryImage.createMany({
+        data: fileIds.map((fileId: string, index: number) => ({
           galleryItemId: galleryItem.id,
-          fileId: imageFileId,
-          order: 0,
-        }
+          fileId,
+          order: index,
+        }))
       })
     }
 
     // Fetch gallery item with images
-    const itemWithImages = await (prisma.galleryItem.findUnique as any)({
+    const itemWithImages = await prisma.galleryItem.findUnique({
       where: { id: galleryItem.id },
       include: {
         images: {
@@ -147,7 +152,8 @@ export async function POST(request: NextRequest) {
                 filename: true,
               }
             }
-          }
+          },
+          orderBy: { order: 'asc' }
         }
       }
     })

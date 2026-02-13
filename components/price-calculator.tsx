@@ -106,7 +106,7 @@ export function PriceCalculator({ product }: PriceCalculatorProps) {
         <div className="space-y-2">
           <Label htmlFor="material">Material</Label>
           <Select value={material} onValueChange={setMaterial}>
-            <SelectTrigger id="material">
+            <SelectTrigger id="material" className="min-h-12 touch-manipulation">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -124,7 +124,7 @@ export function PriceCalculator({ product }: PriceCalculatorProps) {
         <div className="space-y-2">
           <Label htmlFor="size">Size</Label>
           <Select value={size} onValueChange={setSize}>
-            <SelectTrigger id="size">
+            <SelectTrigger id="size" className="min-h-12 touch-manipulation">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -142,7 +142,7 @@ export function PriceCalculator({ product }: PriceCalculatorProps) {
         <div className="space-y-2">
           <Label htmlFor="quantity">Quantity</Label>
           <Select value={quantity.toString()} onValueChange={(val) => setQuantity(Number(val))}>
-            <SelectTrigger id="quantity">
+            <SelectTrigger id="quantity" className="min-h-12 touch-manipulation">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -175,7 +175,7 @@ export function PriceCalculator({ product }: PriceCalculatorProps) {
           </div>
         </div>
 
-        <Button onClick={handleOrderNow} size="lg" className="w-full">
+        <Button onClick={handleOrderNow} size="lg" className="w-full min-h-12 text-base touch-manipulation">
           Order Now
         </Button>
 

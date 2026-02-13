@@ -17,7 +17,8 @@ export default function CartPage() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
+    // Client-only guard to avoid hydration mismatch with cart from localStorage
+    setMounted(true) // eslint-disable-line react-hooks/set-state-in-effect
     // Redirect admins to admin dashboard
     if (user?.role === "admin") {
       router.push("/admin")

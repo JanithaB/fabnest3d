@@ -31,8 +31,10 @@ export default function SettingsPage() {
     if (!isAuthenticated) {
       router.push("/auth/login")
     } else if (user) {
+      /* eslint-disable react-hooks/set-state-in-effect -- sync auth user to form when loaded */
       setName(user.name)
       setEmail(user.email)
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [_hasHydrated, isAuthenticated, user, router])
 

@@ -10,6 +10,10 @@
 # production
 /build
 
+# pnpm / npm temp
+_tmp_*
+*@*
+
 # debug
 npm-debug.log*
 yarn-debug.log*

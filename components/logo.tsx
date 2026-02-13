@@ -16,7 +16,7 @@ export function Logo({ className, showText = false, size = "md" }: LogoProps) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
+    setMounted(true) // eslint-disable-line react-hooks/set-state-in-effect -- client-only for theme
   }, [])
 
   const sizes = {

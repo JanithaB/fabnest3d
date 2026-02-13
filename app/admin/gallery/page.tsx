@@ -17,6 +17,7 @@ type GalleryItem = {
   image: string
   images: Array<{
     id: string
+    fileId?: string
     url: string
     order: number
   }>
@@ -26,6 +27,8 @@ type GalleryItem = {
   updatedAt: string
 }
 
+type ImageEntry = { fileId: string; url: string }
+
 // Helper function to prepare form data for API
 const prepareFormData = (formData: any) => ({
   title: formData.title.trim(),
@@ -34,46 +37,87 @@ const prepareFormData = (formData: any) => ({
   tags: formData.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean),
 })
 
-// File upload handler wrapper
-const createFileUploadHandler = (handleFileUpload: (file: File) => Promise<string | null>, setFormData: (data: any) => void, formData: any) => {
-  return async (file: File) => {
-    const fileId = await handleFileUpload(file)
-    if (fileId) {
-      setFormData({ ...formData, imageFileId: fileId })
+// File upload handler - adds one or more images to the list
+const createFileUploadHandler = (
+  handleFileUpload: (file: File) => Promise<{ fileId: string; url: string } | null>,
+  setFormData: (data: any) => void,
+  formData: any
+) => {
+  return async (files: File | FileList) => {
+    const list = Array.isArray(files) ? files : files instanceof FileList ? Array.from(files) : [files]
+    for (const file of list) {
+      const result = await handleFileUpload(file)
+      if (result) {
+        setFormData((prev: any) => ({
+          ...prev,
+          imageEntries: [...(prev.imageEntries || []), { fileId: result!.fileId, url: result!.url }],
+        }))
+      }
     }
   }
 }
 
-// File upload input component
-const FileUploadInput = ({ 
-  onFileSelect, 
-  disabled, 
-  uploading, 
-  hasFile 
-}: { 
-  onFileSelect: (file: File) => Promise<void>
+// Multi-image upload and list component
+const MultiImageUpload = ({
+  imageEntries,
+  onAdd,
+  onRemove,
+  disabled,
+  uploading,
+  isEdit,
+}: {
+  imageEntries: ImageEntry[]
+  onAdd: (files: File | FileList) => Promise<void>
+  onRemove: (index: number) => void
   disabled?: boolean
   uploading?: boolean
-  hasFile?: boolean
+  isEdit?: boolean
 }) => (
   <div>
-    <label className="text-sm font-medium mb-2 block">Image {hasFile ? '(optional - leave empty to keep current)' : '*'}</label>
+    <label className="text-sm font-medium mb-2 block">
+      Images {isEdit ? '(optional - add more or remove)' : '*'} — at least one required
+    </label>
     <Input
       type="file"
       accept="image/*"
+      multiple
       onChange={async (e) => {
-        const file = e.target.files?.[0]
-        if (file) {
-          await onFileSelect(file)
+        const files = e.target.files
+        if (files?.length) {
+          await onAdd(files)
+          e.target.value = ""
         }
       }}
       disabled={disabled || uploading}
     />
-    {uploading && (
-      <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
-    )}
-    {hasFile && !uploading && (
-      <p className="text-sm text-green-600 mt-1">✓ {hasFile ? 'New image' : 'Image'} uploaded</p>
+    {uploading && <p className="text-sm text-muted-foreground mt-1">Uploading...</p>}
+    {imageEntries.length > 0 && (
+      <div className="flex flex-wrap gap-2 mt-3">
+        {imageEntries.map((entry, index) => (
+          <div key={entry.fileId} className="relative group">
+            <div className="w-20 h-20 rounded-lg overflow-hidden border bg-muted">
+              <Image
+                src={entry.url}
+                alt=""
+                width={80}
+                height={80}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              className="absolute -top-1 -right-1 min-h-[44px] min-w-[44px] h-9 w-9 rounded-full opacity-90 group-hover:opacity-100 touch-manipulation flex items-center justify-center"
+              onClick={() => onRemove(index)}
+              disabled={disabled}
+              aria-label="Remove image"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
     )}
   </div>
 )
@@ -83,12 +127,14 @@ const GalleryFormFields = ({
   formData,
   setFormData,
   onFileSelect,
+  onRemoveImage,
   uploading,
   isEdit = false
 }: {
   formData: any
   setFormData: (data: any) => void
-  onFileSelect: (file: File) => Promise<void>
+  onFileSelect: (files: File | FileList) => Promise<void>
+  onRemoveImage: (index: number) => void
   uploading?: boolean
   isEdit?: boolean
 }) => (
@@ -110,11 +156,13 @@ const GalleryFormFields = ({
         rows={3}
       />
     </div>
-    <FileUploadInput
-      onFileSelect={onFileSelect}
-      disabled={uploading}
+    <MultiImageUpload
+      imageEntries={formData.imageEntries || []}
+      onAdd={onFileSelect}
+      onRemove={onRemoveImage}
       uploading={uploading}
-      hasFile={isEdit}
+      disabled={uploading}
+      isEdit={isEdit}
     />
     <div>
       <label className="text-sm font-medium mb-2 block">Customer Name (optional)</label>
@@ -141,10 +189,16 @@ export default function AdminGalleryPage() {
   const [loading, setLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string
+    description: string
+    imageEntries: ImageEntry[]
+    customerName: string
+    tags: string
+  }>({
     title: "",
     description: "",
-    imageFileId: "",
+    imageEntries: [],
     customerName: "",
     tags: "",
   })
@@ -183,7 +237,7 @@ export default function AdminGalleryPage() {
     setFormData({
       title: "",
       description: "",
-      imageFileId: "",
+      imageEntries: [],
       customerName: "",
       tags: "",
     })
@@ -191,7 +245,14 @@ export default function AdminGalleryPage() {
     setEditingId(null)
   }
 
-  const handleFileUpload = async (file: File): Promise<string | null> => {
+  const handleRemoveImage = (index: number) => {
+    setFormData({
+      ...formData,
+      imageEntries: formData.imageEntries.filter((_, i) => i !== index),
+    })
+  }
+
+  const handleFileUpload = async (file: File): Promise<{ fileId: string; url: string } | null> => {
     setUploading(true)
     try {
       const currentToken = useAuth.getState().token
@@ -214,8 +275,8 @@ export default function AdminGalleryPage() {
       })
 
       const data = await response.json()
-      if (response.ok) {
-        return data.file.id
+      if (response.ok && data.file) {
+        return { fileId: data.file.id, url: data.file.url || '' }
       } else {
         alert(data.error || 'Failed to upload image')
         return null
@@ -230,8 +291,9 @@ export default function AdminGalleryPage() {
   }
 
   const handleAdd = async () => {
-    if (!formData.title || !formData.description || !formData.imageFileId) {
-      alert("Please fill in all required fields and upload an image")
+    const imageFileIds = (formData.imageEntries || []).map((e) => e.fileId)
+    if (!formData.title || !formData.description || imageFileIds.length === 0) {
+      alert("Please fill in all required fields and upload at least one image")
       return
     }
 
@@ -251,7 +313,7 @@ export default function AdminGalleryPage() {
         },
         body: JSON.stringify({
           ...prepareFormData(formData),
-          imageFileId: formData.imageFileId,
+          imageFileIds,
         })
       })
 
@@ -273,10 +335,13 @@ export default function AdminGalleryPage() {
 
   const handleEdit = (item: GalleryItem) => {
     setEditingId(item.id)
+    const imageEntries: ImageEntry[] = (item.images || [])
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((img) => ({ fileId: (img as any).fileId || img.id, url: img.url }))
     setFormData({
       title: item.title,
       description: item.description,
-      imageFileId: (item.images as any)?.[0]?.fileId || "",
+      imageEntries,
       customerName: item.customerName || "",
       tags: item.tags.join(", "),
     })
@@ -297,11 +362,7 @@ export default function AdminGalleryPage() {
       }
 
       const updateData: any = prepareFormData(formData)
-
-      // Only include imageFileId if a new image was uploaded
-      if (formData.imageFileId) {
-        updateData.imageFileId = formData.imageFileId
-      }
+      updateData.imageFileIds = (formData.imageEntries || []).map((e) => e.fileId)
 
       const response = await fetch(`/api/gallery/${editingId}`, {
         method: 'PUT',
@@ -386,6 +447,7 @@ export default function AdminGalleryPage() {
               formData={formData}
               setFormData={setFormData}
               onFileSelect={createFileUploadHandler(handleFileUpload, setFormData, formData)}
+              onRemoveImage={handleRemoveImage}
               uploading={uploading}
               isEdit={false}
             />
@@ -484,6 +546,7 @@ export default function AdminGalleryPage() {
               formData={formData}
               setFormData={setFormData}
               onFileSelect={createFileUploadHandler(handleFileUpload, setFormData, formData)}
+              onRemoveImage={handleRemoveImage}
               uploading={uploading || updating}
               isEdit={true}
             />

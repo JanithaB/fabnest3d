@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { GalleryCard } from "@/components/gallery-card"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
@@ -26,11 +26,7 @@ export default function GalleryPage() {
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
 
-  useEffect(() => {
-    fetchGalleryItems()
-  }, [currentPage])
-
-  const fetchGalleryItems = async () => {
+  const fetchGalleryItems = useCallback(async () => {
     setLoading(true)
     try {
       const offset = (currentPage - 1) * ITEMS_PER_PAGE
@@ -47,7 +43,11 @@ export default function GalleryPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage])
+
+  useEffect(() => {
+    fetchGalleryItems()
+  }, [fetchGalleryItems])
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {

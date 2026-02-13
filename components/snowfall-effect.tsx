@@ -7,7 +7,7 @@ export function SnowfallEffect() {
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
-    setIsClient(true)
+    setIsClient(true) // eslint-disable-line react-hooks/set-state-in-effect -- client-only for Snowfall
   }, [])
 
   if (!isClient) return null
