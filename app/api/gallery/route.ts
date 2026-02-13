@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-server'
 import { validateStringLength } from '@/lib/validation'
+import { normalizeFileUrl } from '@/lib/file-url'
 
 // GET /api/gallery - List all gallery items
 export async function GET(request: NextRequest) {
@@ -55,11 +56,11 @@ export async function GET(request: NextRequest) {
     // Transform to include primary image URL for backward compatibility
     const itemsWithImages = (galleryItems as any[]).map((item: any) => ({
       ...item,
-      image: item.images?.[0]?.file?.url || '',
+      image: normalizeFileUrl(item.images?.[0]?.file?.url || ''),
       images: (item.images || []).map((img: any) => ({
         id: img.id,
         fileId: img.file?.id || '',
-        url: img.file?.url || '',
+        url: normalizeFileUrl(img.file?.url || ''),
         order: img.order,
       }))
     }))
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       item: {
         ...itemWithImages,
-        image: itemWithImages?.images[0]?.file.url || '',
+        image: normalizeFileUrl(itemWithImages?.images[0]?.file.url || ''),
       }
     }, { status: 201 })
   } catch (error: any) {

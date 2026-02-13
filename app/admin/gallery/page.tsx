@@ -108,12 +108,12 @@ const MultiImageUpload = ({
               type="button"
               variant="destructive"
               size="icon"
-              className="absolute -top-1 -right-1 min-h-[44px] min-w-[44px] h-9 w-9 rounded-full opacity-90 group-hover:opacity-100 touch-manipulation flex items-center justify-center"
+              className="absolute -top-1 -right-1 h-5 w-5 rounded-full opacity-90 group-hover:opacity-100 touch-manipulation flex items-center justify-center p-0"
               onClick={() => onRemove(index)}
               disabled={disabled}
               aria-label="Remove image"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </Button>
           </div>
         ))}
