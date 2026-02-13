@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -40,11 +40,7 @@ export default function AdminUsersPage() {
   })
   const [updating, setUpdating] = useState(false)
 
-  useEffect(() => {
-    fetchUsers()
-  }, [token])
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/users', {
         headers: {
@@ -60,7 +56,11 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers])
 
   const filteredUsers = users.filter(
     (user) =>

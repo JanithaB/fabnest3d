@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -52,11 +52,7 @@ export default function AdminQuoteRequestsPage() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchQuoteRequests()
-  }, [])
-
-  const fetchQuoteRequests = async () => {
+  const fetchQuoteRequests = useCallback(async () => {
     try {
       const response = await fetch('/api/quote-requests', {
         headers: {
@@ -72,7 +68,11 @@ export default function AdminQuoteRequestsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    fetchQuoteRequests()
+  }, [fetchQuoteRequests])
 
   const handleDownloadFile = async (fileId: string, filename: string) => {
     try {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, ShoppingBag, Package, Users, Loader2, FileText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -34,11 +34,7 @@ export default function AdminDashboard() {
   const [recentQuoteRequests, setRecentQuoteRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchDashboardData()
-  }, [token])
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const [ordersRes, usersRes, quoteRequestsRes] = await Promise.all([
         fetch('/api/orders', {
@@ -97,7 +93,11 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [token, fetchDashboardData])
 
   if (loading) {
     return (

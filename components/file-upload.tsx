@@ -293,7 +293,7 @@ export function FileUpload() {
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
                   After uploading your file, our team will review it and send you a detailed price quote via email. 
-                  You'll receive a Proforma Invoice (PI) with the exact pricing.
+                  You&apos;ll receive a Proforma Invoice (PI) with the exact pricing.
                 </p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">

@@ -8,11 +8,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = body
 
-    console.log('Login attempt for:', email)
-
     // Validate input
     if (!email || !password) {
-      console.log('Missing email or password')
       return NextResponse.json(
         { error: 'Email and password are required' },
         { status: 400 }
@@ -22,7 +19,6 @@ export async function POST(request: NextRequest) {
     // Validate email format
     const emailValidation = validateEmail(email)
     if (!emailValidation.valid) {
-      console.log('Invalid email format:', email)
       return NextResponse.json(
         { error: 'Invalid email format' },
         { status: 400 }
@@ -35,31 +31,23 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      console.log('User not found:', email)
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       )
     }
-
-    console.log('User found:', user.email, 'Role:', user.role)
 
     // Verify password
     const isValidPassword = await verifyPassword(password, user.password)
 
     if (!isValidPassword) {
-      console.log('Invalid password for user:', email)
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       )
     }
 
-    console.log('Password verified successfully')
-
-    // Generate JWT token
     const token = generateToken(user.id, user.email, user.role)
-    console.log('Token generated successfully')
 
     // Return user data (without password) and token
     return NextResponse.json({

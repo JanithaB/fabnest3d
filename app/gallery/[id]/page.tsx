@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -37,13 +37,7 @@ export default function GalleryItemPage() {
   const thumbRefs = useRef<(HTMLButtonElement | null)[]>([])
   const touchStartX = useRef<number>(0)
 
-  useEffect(() => {
-    if (id) {
-      fetchGalleryItem()
-    }
-  }, [id])
-
-  const fetchGalleryItem = async () => {
+  const fetchGalleryItem = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/gallery/${id}`)
@@ -59,7 +53,13 @@ export default function GalleryItemPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, router])
+
+  useEffect(() => {
+    if (id) {
+      fetchGalleryItem()
+    }
+  }, [id, fetchGalleryItem])
 
   if (loading) {
     return (

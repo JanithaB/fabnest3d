@@ -17,21 +17,15 @@ export function TechEffects() {
   const mouseRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
-    setIsClient(true)
+    setIsClient(true) // eslint-disable-line react-hooks/set-state-in-effect -- client-only for canvas
   }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) {
-      console.log('Canvas not found')
-      return
-    }
+    if (!canvas) return
 
     const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      console.log('Context not found')
-      return
-    }
+    if (!ctx) return
 
     let width = window.innerWidth
     let height = window.innerHeight
@@ -148,7 +142,6 @@ export function TechEffects() {
       animationFrameRef.current = requestAnimationFrame(animate)
     }
 
-    console.log('TechEffects: Starting animation with', particleCount, 'particles')
     animate()
 
     return () => {

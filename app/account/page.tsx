@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,18 +14,7 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Wait for Zustand to hydrate from localStorage before checking auth
-    if (!_hasHydrated) return
-
-    if (!isAuthenticated) {
-      router.push("/auth/login")
-    } else if (user && token) {
-      fetchOrders()
-    }
-  }, [_hasHydrated, isAuthenticated, user, token, router])
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const response = await fetch('/api/orders', {
         headers: {
@@ -41,7 +30,18 @@ export default function AccountPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    // Wait for Zustand to hydrate from localStorage before checking auth
+    if (!_hasHydrated) return
+
+    if (!isAuthenticated) {
+      router.push("/auth/login")
+    } else if (user && token) {
+      fetchOrders()
+    }
+  }, [_hasHydrated, isAuthenticated, user, token, router, fetchOrders])
 
   // Show loading while Zustand hydrates from localStorage
   if (!_hasHydrated) {

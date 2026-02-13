@@ -301,7 +301,7 @@ export default function OrdersPage() {
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No quote requests</h3>
                   <p className="text-muted-foreground text-center mb-4">
-                    You haven't submitted any quote requests yet
+                    You haven&apos;t submitted any quote requests yet
                   </p>
                   <Button asChild>
                     <Link href="/shop/upload">Upload a File</Link>
@@ -494,7 +494,7 @@ export default function OrdersPage() {
                   <Package className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No active orders</h3>
                   <p className="text-muted-foreground text-center mb-4">
-                    You don't have any active orders at the moment
+                    You don&apos;t have any active orders at the moment
                   </p>
                   <Button asChild>
                     <Link href="/shop/products">Browse Marketplace</Link>
@@ -514,7 +514,7 @@ export default function OrdersPage() {
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Package className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No completed orders</h3>
-                  <p className="text-muted-foreground text-center">You haven't completed any orders yet</p>
+                  <p className="text-muted-foreground text-center">You haven&apos;t completed any orders yet</p>
                 </CardContent>
               </Card>
             ) : (
@@ -530,7 +530,7 @@ export default function OrdersPage() {
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Package className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No cancelled orders</h3>
-                  <p className="text-muted-foreground text-center">You don't have any cancelled orders</p>
+                  <p className="text-muted-foreground text-center">You don&apos;t have any cancelled orders</p>
                 </CardContent>
               </Card>
             ) : (

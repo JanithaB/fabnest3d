@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -79,13 +79,7 @@ export default function AdminOrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (id && token) {
-      fetchOrder()
-    }
-  }, [id, token])
-
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     try {
       const currentToken = useAuth.getState().token
       if (!currentToken) return
@@ -107,7 +101,13 @@ export default function AdminOrderDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, router])
+
+  useEffect(() => {
+    if (id && token) {
+      fetchOrder()
+    }
+  }, [id, token, fetchOrder])
 
   const handleDownloadFile = async (fileId: string, filename: string) => {
     try {

@@ -44,9 +44,8 @@ export function Navbar() {
   const isAdmin = user?.role === "admin"
 
   // Avoid hydration mismatch: Radix Sheet generates IDs that can differ between server and client.
-  // Only render the Sheet after mount so server and first client paint match (no Sheet, no IDs).
   useEffect(() => {
-    setMounted(true)
+    setMounted(true) // eslint-disable-line react-hooks/set-state-in-effect
   }, [])
 
   const handleLogout = () => {

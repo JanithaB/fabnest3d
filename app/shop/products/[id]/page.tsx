@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { PriceCalculator } from "@/components/price-calculator"
 import { notFound } from "next/navigation"
@@ -35,13 +35,7 @@ export default function ProductPage() {
   const thumbRefs = useRef<(HTMLButtonElement | null)[]>([])
   const touchStartX = useRef<number>(0)
 
-  useEffect(() => {
-    if (id) {
-      fetchProduct()
-    }
-  }, [id])
-
-  const fetchProduct = async () => {
+  const fetchProduct = useCallback(async () => {
     try {
       const response = await fetch(`/api/products/${id}`)
       if (response.ok) {
@@ -56,7 +50,13 @@ export default function ProductPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  useEffect(() => {
+    if (id) {
+      fetchProduct()
+    }
+  }, [id, fetchProduct])
 
   if (loading) {
     return (
