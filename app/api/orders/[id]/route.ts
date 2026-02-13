@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, requireAdmin } from '@/lib/auth-server'
 import { validateStringLength } from '@/lib/validation'
+import { normalizeFileUrl } from '@/lib/file-url'
 
 // GET /api/orders/[id] - Get order details
 export async function GET(
@@ -76,8 +77,8 @@ export async function GET(
       ...order,
       items: order.items.map(item => ({
         ...item,
-        productImage: item.product?.images[0]?.file.url || null,
-        customFileUrl: item.customFile?.file.url || null,
+        productImage: normalizeFileUrl(item.product?.images[0]?.file.url) || null,
+        customFileUrl: normalizeFileUrl(item.customFile?.file.url) || null,
         // Add file download info for admins
         customFile: item.customFile ? {
           ...item.customFile,

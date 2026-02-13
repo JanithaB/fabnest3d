@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-server'
 import { validateStringLength } from '@/lib/validation'
+import { normalizeFileUrl } from '@/lib/file-url'
 
 // Helper function to handle API errors
 function handleApiError(error: any, defaultMessage: string): NextResponse {
@@ -57,11 +58,11 @@ export async function GET(
     // Transform to include primary image URL
     return NextResponse.json({
       ...galleryItem,
-      image: galleryItem.images[0]?.file.url || '',
+      image: normalizeFileUrl(galleryItem.images[0]?.file.url || ''),
       images: galleryItem.images.map(img => ({
         id: img.id,
         fileId: img.file.id,
-        url: img.file.url,
+        url: normalizeFileUrl(img.file.url),
         order: img.order,
       }))
     })
@@ -176,7 +177,7 @@ export async function PUT(
     return NextResponse.json({
       item: {
         ...itemWithImages,
-        image: itemWithImages?.images[0]?.file.url || '',
+        image: normalizeFileUrl(itemWithImages?.images[0]?.file.url || ''),
       }
     })
   } catch (error: any) {

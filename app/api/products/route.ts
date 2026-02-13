@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-server'
 import { validateFloat, validateStringLength } from '@/lib/validation'
+import { normalizeFileUrl } from '@/lib/file-url'
 
 // GET /api/products - List all products
 export async function GET(request: NextRequest) {
@@ -59,11 +60,11 @@ export async function GET(request: NextRequest) {
       
       return {
         ...product,
-        image: validImages.find(img => img.isPrimary)?.file.url || validImages[0]?.file.url || '',
+        image: normalizeFileUrl(validImages.find(img => img.isPrimary)?.file.url || validImages[0]?.file.url || ''),
         images: validImages.map(img => ({
           id: img.id,
           fileId: img.file.id,
-          url: img.file.url,
+          url: normalizeFileUrl(img.file.url),
           isPrimary: img.isPrimary,
           order: img.order,
         }))
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       product: {
         ...productWithImages,
-        image: productWithImages?.images.find(img => img.isPrimary)?.file.url || productWithImages?.images[0]?.file.url || '',
+        image: normalizeFileUrl(productWithImages?.images.find(img => img.isPrimary)?.file.url || productWithImages?.images[0]?.file.url || ''),
       }
     }, { status: 201 })
   } catch (error: any) {

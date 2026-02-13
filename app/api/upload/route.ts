@@ -39,19 +39,19 @@ export async function POST(request: NextRequest) {
     if (fileType === 'model') {
       // User-uploaded models always go to /public/uploads/model
       storageDir = join(process.cwd(), 'public', 'uploads', 'model')
-      urlPrefix = '/uploads/model'
+      urlPrefix = '/api/files/uploads/model'
     } else if (fileType === 'image') {
       // Admin-uploaded images go to specific directories
       if (destination === 'products') {
         storageDir = join(process.cwd(), 'public', 'products')
-        urlPrefix = '/products'
+        urlPrefix = '/api/files/products'
       } else if (destination === 'gallery') {
         storageDir = join(process.cwd(), 'public', 'gallery')
-        urlPrefix = '/gallery'
+        urlPrefix = '/api/files/gallery'
       } else {
         // Default to uploads/image if no destination specified (backward compatibility)
         storageDir = join(process.cwd(), 'public', 'uploads', 'image')
-        urlPrefix = '/uploads/image'
+        urlPrefix = '/api/files/uploads/image'
       }
     } else {
       return NextResponse.json(
