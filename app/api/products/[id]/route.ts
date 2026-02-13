@@ -63,6 +63,7 @@ export async function GET(
       image: validImages.find(img => img.isPrimary)?.file.url || validImages[0]?.file.url || '',
       images: validImages.map(img => ({
         id: img.id,
+        fileId: img.file.id,
         url: img.file.url,
         isPrimary: img.isPrimary,
         order: img.order,
@@ -87,7 +88,14 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     
-    const { name, description, basePrice, category, tags, printTime, imageFileId } = body
+    const { name, description, basePrice, category, tags, printTime, imageFileId, imageFileIds, primaryImageIndex } = body
+
+    const fileIds = Array.isArray(imageFileIds) && imageFileIds.length > 0
+      ? imageFileIds.filter((id: string) => id && typeof id === 'string')
+      : imageFileId ? [imageFileId] : null
+    const primaryIndex = fileIds && fileIds.length > 0 && typeof primaryImageIndex === 'number' && primaryImageIndex >= 0 && primaryImageIndex < fileIds.length
+      ? primaryImageIndex
+      : 0
 
     // Check if product exists
     const existingProduct = await prisma.product.findUnique({
@@ -143,42 +151,19 @@ export async function PUT(
       data: updateData,
     })
 
-    // Handle image update if provided
-    if (imageFileId) {
-      // Remove existing primary images
-      await prisma.productImage.updateMany({
-        where: {
-          productId: id,
-          isPrimary: true,
-        },
-        data: {
-          isPrimary: false,
-        }
+    // Handle image update if provided (replace all images with the new list)
+    if (fileIds !== null) {
+      await prisma.productImage.deleteMany({
+        where: { productId: id }
       })
-
-      // Check if this file is already linked
-      const existingImage = await prisma.productImage.findFirst({
-        where: {
-          productId: id,
-          fileId: imageFileId,
-        }
-      })
-
-      if (existingImage) {
-        // Make it primary
-        await prisma.productImage.update({
-          where: { id: existingImage.id },
-          data: { isPrimary: true },
-        })
-      } else {
-        // Create new product image
-        await prisma.productImage.create({
-          data: {
+      if (fileIds.length > 0) {
+        await prisma.productImage.createMany({
+          data: fileIds.map((fileId: string, index: number) => ({
             productId: id,
-            fileId: imageFileId,
-            isPrimary: true,
-            order: 0,
-          }
+            fileId,
+            isPrimary: index === primaryIndex,
+            order: index,
+          }))
         })
       }
     }

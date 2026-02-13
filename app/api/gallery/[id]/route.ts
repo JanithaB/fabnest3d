@@ -84,7 +84,11 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     
-    const { title, description, customerName, tags, imageFileId } = body
+    const { title, description, customerName, tags, imageFileId, imageFileIds } = body
+
+    const fileIds = Array.isArray(imageFileIds) && imageFileIds.length > 0
+      ? imageFileIds.filter((id: string) => id && typeof id === 'string')
+      : imageFileId ? [imageFileId] : null
 
     // Check if gallery item exists
     const existingItem = await prisma.galleryItem.findUnique({
@@ -134,24 +138,18 @@ export async function PUT(
       data: updateData,
     })
 
-    // Handle image update if provided
-    if (imageFileId) {
-      // Check if this file is already linked
-      const existingImage = await prisma.galleryImage.findFirst({
-        where: {
-          galleryItemId: id,
-          fileId: imageFileId,
-        }
+    // Handle image update if provided (replace all images with the new list)
+    if (fileIds !== null) {
+      await prisma.galleryImage.deleteMany({
+        where: { galleryItemId: id }
       })
-
-      if (!existingImage) {
-        // Create new gallery image
-        await prisma.galleryImage.create({
-          data: {
+      if (fileIds.length > 0) {
+        await prisma.galleryImage.createMany({
+          data: fileIds.map((fileId: string, index: number) => ({
             galleryItemId: id,
-            fileId: imageFileId,
-            order: 0,
-          }
+            fileId,
+            order: index,
+          }))
         })
       }
     }
@@ -169,7 +167,8 @@ export async function PUT(
                 filename: true,
               }
             }
-          }
+          },
+          orderBy: { order: 'asc' }
         }
       }
     })

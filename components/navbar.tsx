@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Separator } from "@/components/ui/separator"
 import { Logo } from "@/components/logo"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { LogOut } from "lucide-react"
 import { LucideIcon } from "lucide-react"
@@ -40,7 +40,14 @@ export function Navbar() {
   const router = useRouter()
   const { isAuthenticated, user, logout } = useAuth()
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const isAdmin = user?.role === "admin"
+
+  // Avoid hydration mismatch: Radix Sheet generates IDs that can differ between server and client.
+  // Only render the Sheet after mount so server and first client paint match (no Sheet, no IDs).
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -112,14 +119,15 @@ export function Navbar() {
             )}
           </div>
 
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] sm:w-[320px] p-0">
+          {mounted ? (
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[280px] sm:w-[320px] p-0">
               <SheetHeader className="px-6 pt-6 pb-4 border-b">
                 <div className="flex items-center justify-between">
                   <SheetTitle>
@@ -185,6 +193,12 @@ export function Navbar() {
               </nav>
             </SheetContent>
           </Sheet>
+          ) : (
+            <Button variant="ghost" size="icon" className="md:hidden" aria-hidden tabIndex={-1}>
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle menu</span>
+            </Button>
+          )}
         </div>
       </div>
     </header>

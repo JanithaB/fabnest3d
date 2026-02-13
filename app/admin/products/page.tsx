@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth"
-import { Search, Plus, Edit2, Trash2, Loader2 } from "lucide-react"
+import { Search, Plus, Edit2, Trash2, Loader2, X, Star } from "lucide-react"
 import { formatCurrency } from "@/lib/currency"
+
+type ImageEntry = { fileId: string; url: string }
 
 type Product = {
   id: string
@@ -20,9 +22,11 @@ type Product = {
   category: string
   tags: string[]
   images?: Array<{
-    file: {
-      url: string
-    }
+    fileId?: string
+    file?: { url: string }
+    url?: string
+    isPrimary?: boolean
+    order?: number
   }>
 }
 
@@ -35,46 +39,99 @@ const prepareProductFormData = (formData: any) => ({
   tags: formData.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean),
 })
 
-// File upload handler wrapper for products
-const createProductFileUploadHandler = (handleFileUpload: (file: File) => Promise<string | null>, setFormData: (data: any) => void, formData: any) => {
-  return async (file: File) => {
-    const fileId = await handleFileUpload(file)
-    if (fileId) {
-      setFormData({ ...formData, imageFileId: fileId })
+// File upload handler - adds one or more images
+const createProductFileUploadHandler = (
+  handleFileUpload: (file: File) => Promise<{ fileId: string; url: string } | null>,
+  setFormData: (data: any) => void
+) => {
+  return async (files: File | FileList) => {
+    const list = Array.isArray(files) ? files : files instanceof FileList ? Array.from(files) : [files]
+    for (const file of list) {
+      const result = await handleFileUpload(file)
+      if (result) {
+        setFormData((prev: any) => ({
+          ...prev,
+          imageEntries: [...(prev.imageEntries || []), { fileId: result!.fileId, url: result!.url }],
+          primaryImageIndex: prev.imageEntries?.length === 0 ? 0 : (prev.primaryImageIndex ?? 0),
+        }))
+      }
     }
   }
 }
 
-// File upload input component for products
-const ProductFileUploadInput = ({ 
-  onFileSelect, 
-  disabled, 
-  uploading, 
-  hasFile 
-}: { 
-  onFileSelect: (file: File) => Promise<void>
+// Multi-image upload for products with primary selection
+const ProductMultiImageUpload = ({
+  imageEntries,
+  primaryImageIndex,
+  onAdd,
+  onRemove,
+  onSetPrimary,
+  disabled,
+  uploading,
+  isEdit,
+}: {
+  imageEntries: ImageEntry[]
+  primaryImageIndex: number
+  onAdd: (files: File | FileList) => Promise<void>
+  onRemove: (index: number) => void
+  onSetPrimary: (index: number) => void
   disabled?: boolean
   uploading?: boolean
-  hasFile?: boolean
+  isEdit?: boolean
 }) => (
   <div>
-    <label className="text-sm font-medium mb-2 block">Image {hasFile ? '(optional - leave empty to keep current)' : '*'}</label>
+    <label className="text-sm font-medium mb-2 block">
+      Images {isEdit ? '(optional)' : '*'} — first or selected is primary
+    </label>
     <Input
       type="file"
       accept="image/*"
+      multiple
       onChange={async (e) => {
-        const file = e.target.files?.[0]
-        if (file) {
-          await onFileSelect(file)
+        const files = e.target.files
+        if (files?.length) {
+          await onAdd(files)
+          e.target.value = ""
         }
       }}
       disabled={disabled || uploading}
     />
-    {uploading && (
-      <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
-    )}
-    {hasFile && !uploading && (
-      <p className="text-sm text-green-600 mt-1">✓ {hasFile ? 'New image' : 'Image'} uploaded</p>
+    {uploading && <p className="text-sm text-muted-foreground mt-1">Uploading...</p>}
+    {imageEntries.length > 0 && (
+      <div className="flex flex-wrap gap-2 mt-3">
+        {imageEntries.map((entry, index) => (
+          <div key={entry.fileId} className="relative group">
+            <div className={`w-20 h-20 rounded-lg overflow-hidden border-2 bg-muted ${primaryImageIndex === index ? 'border-primary' : 'border-transparent'}`}>
+              <Image src={entry.url} alt="" width={80} height={80} className="object-cover w-full h-full" />
+            </div>
+            <div className="absolute top-0 left-0 right-0 flex justify-between p-0.5 gap-0.5">
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="h-6 w-6 sm:h-7 sm:w-7 rounded-full opacity-90 touch-manipulation flex items-center justify-center"
+                onClick={() => onSetPrimary(index)}
+                disabled={disabled}
+                title="Set as primary"
+                aria-label="Set as primary"
+              >
+                <Star className={`h-3 w-3 ${primaryImageIndex === index ? 'fill-primary' : ''}`} />
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                className="h-6 w-6 sm:h-7 sm:w-7 rounded-full opacity-90 touch-manipulation flex items-center justify-center"
+                onClick={() => onRemove(index)}
+                disabled={disabled}
+                aria-label="Remove image"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
     )}
   </div>
 )
@@ -84,12 +141,16 @@ const ProductFormFields = ({
   formData,
   setFormData,
   onFileSelect,
+  onRemoveImage,
+  onSetPrimaryImage,
   uploading,
   isEdit = false
 }: {
   formData: any
   setFormData: (data: any) => void
-  onFileSelect: (file: File) => Promise<void>
+  onFileSelect: (files: File | FileList) => Promise<void>
+  onRemoveImage: (index: number) => void
+  onSetPrimaryImage: (index: number) => void
   uploading?: boolean
   isEdit?: boolean
 }) => (
@@ -112,11 +173,15 @@ const ProductFormFields = ({
       />
     </div>
     <div className="grid grid-cols-2 gap-4">
-      <ProductFileUploadInput
-        onFileSelect={onFileSelect}
-        disabled={uploading}
+      <ProductMultiImageUpload
+        imageEntries={formData.imageEntries || []}
+        primaryImageIndex={formData.primaryImageIndex ?? 0}
+        onAdd={onFileSelect}
+        onRemove={onRemoveImage}
+        onSetPrimary={onSetPrimaryImage}
         uploading={uploading}
-        hasFile={isEdit}
+        disabled={uploading}
+        isEdit={isEdit}
       />
       <div>
         <label className="text-sm font-medium mb-2 block">Base Price (LKR) *</label>
@@ -157,10 +222,19 @@ export default function AdminProductsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    description: string
+    imageEntries: ImageEntry[]
+    primaryImageIndex: number
+    basePrice: string
+    category: string
+    tags: string
+  }>({
     name: "",
     description: "",
-    imageFileId: "",
+    imageEntries: [],
+    primaryImageIndex: 0,
     basePrice: "",
     category: "",
     tags: "",
@@ -202,7 +276,8 @@ export default function AdminProductsPage() {
     setFormData({
       name: "",
       description: "",
-      imageFileId: "",
+      imageEntries: [],
+      primaryImageIndex: 0,
       basePrice: "",
       category: "",
       tags: "",
@@ -211,7 +286,25 @@ export default function AdminProductsPage() {
     setEditingId(null)
   }
 
-  const handleFileUpload = async (file: File): Promise<string | null> => {
+  const handleRemoveImage = (index: number) => {
+    setFormData((prev) => {
+      const next = { ...prev, imageEntries: prev.imageEntries.filter((_, i) => i !== index) }
+      if (prev.primaryImageIndex >= next.imageEntries.length && next.imageEntries.length > 0) {
+        next.primaryImageIndex = next.imageEntries.length - 1
+      } else if (prev.primaryImageIndex > index) {
+        next.primaryImageIndex = prev.primaryImageIndex - 1
+      } else {
+        next.primaryImageIndex = prev.primaryImageIndex
+      }
+      return next
+    })
+  }
+
+  const handleSetPrimaryImage = (index: number) => {
+    setFormData((prev) => ({ ...prev, primaryImageIndex: index }))
+  }
+
+  const handleFileUpload = async (file: File): Promise<{ fileId: string; url: string } | null> => {
     setUploading(true)
     try {
       const currentToken = useAuth.getState().token
@@ -234,8 +327,8 @@ export default function AdminProductsPage() {
       })
 
       const data = await response.json()
-      if (response.ok) {
-        return data.file.id
+      if (response.ok && data.file) {
+        return { fileId: data.file.id, url: data.file.url || '' }
       } else {
         alert(data.error || 'Failed to upload image')
         return null
@@ -250,8 +343,9 @@ export default function AdminProductsPage() {
   }
 
   const handleAdd = async () => {
-    if (!formData.name || !formData.description || !formData.imageFileId || !formData.basePrice) {
-      alert("Please fill in all required fields and upload an image")
+    const imageFileIds = (formData.imageEntries || []).map((e) => e.fileId)
+    if (!formData.name || !formData.description || !formData.basePrice || imageFileIds.length === 0) {
+      alert("Please fill in all required fields and upload at least one image")
       return
     }
 
@@ -271,7 +365,8 @@ export default function AdminProductsPage() {
         },
         body: JSON.stringify({
           ...prepareProductFormData(formData),
-          imageFileId: formData.imageFileId,
+          imageFileIds,
+          primaryImageIndex: formData.primaryImageIndex ?? 0,
         })
       })
 
@@ -293,13 +388,23 @@ export default function AdminProductsPage() {
 
   const handleEdit = (product: Product) => {
     setEditingId(product.id)
+    const imgs = product.images || []
+    const imageEntries: ImageEntry[] = imgs
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map((img) => ({
+        fileId: (img as any).fileId || '',
+        url: (img as any).url || (img as any).file?.url || '',
+      }))
+      .filter((e) => e.fileId && e.url)
+    const primaryIdx = imgs.findIndex((img) => (img as any).isPrimary)
     setFormData({
       name: product.name,
       description: product.description,
-      imageFileId: product.images?.[0]?.file?.url ? "" : "", // Will be set if new image uploaded
+      imageEntries,
+      primaryImageIndex: primaryIdx >= 0 ? primaryIdx : 0,
       basePrice: product.basePrice.toString(),
       category: product.category,
-      tags: product.tags.join(", "),
+      tags: (product.tags || []).join(", "),
     })
   }
 
@@ -318,11 +423,8 @@ export default function AdminProductsPage() {
       }
 
       const updateData: any = prepareProductFormData(formData)
-
-      // Only include imageFileId if a new image was uploaded
-      if (formData.imageFileId) {
-        updateData.imageFileId = formData.imageFileId
-      }
+      updateData.imageFileIds = (formData.imageEntries || []).map((e) => e.fileId)
+      updateData.primaryImageIndex = formData.primaryImageIndex ?? 0
 
       const response = await fetch(`/api/products/${editingId}`, {
         method: 'PUT',
@@ -406,7 +508,9 @@ export default function AdminProductsPage() {
             <ProductFormFields
               formData={formData}
               setFormData={setFormData}
-              onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
+              onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData)}
+              onRemoveImage={handleRemoveImage}
+              onSetPrimaryImage={handleSetPrimaryImage}
               uploading={uploading}
               isEdit={false}
             />
@@ -438,7 +542,9 @@ export default function AdminProductsPage() {
             <ProductFormFields
               formData={formData}
               setFormData={setFormData}
-              onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData, formData)}
+              onFileSelect={createProductFileUploadHandler(handleFileUpload, setFormData)}
+              onRemoveImage={handleRemoveImage}
+              onSetPrimaryImage={handleSetPrimaryImage}
               uploading={uploading || updating}
               isEdit={true}
             />
@@ -490,7 +596,7 @@ export default function AdminProductsPage() {
                 <div key={product.id} className="flex items-center gap-4 p-4 border rounded-lg">
                   <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                     <Image 
-                      src={product.images?.[0]?.file?.url || product.image || "/gallery/placeholder.svg"} 
+                      src={product.images?.[0]?.url || product.image || "/gallery/placeholder.svg"} 
                       alt={product.name} 
                       fill 
                       className="object-cover" 

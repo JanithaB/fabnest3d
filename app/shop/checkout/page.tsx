@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast"
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, getSubtotal, getShipping, getTax, getTotal, clearCart } = useCart()
-  const { user, token } = useAuth()
+  const { user } = useAuth()
   const { toast } = useToast()
   const [isProcessing, setIsProcessing] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -82,8 +82,12 @@ export default function CheckoutPage() {
         }),
       })
 
-      const data = await response.json()
-
+      let data: { error?: string } = {}
+      try {
+        data = await response.json()
+      } catch {
+        // Non-JSON response (e.g. 502 HTML)
+      }
       if (!response.ok) {
         throw new Error(data.error || 'Failed to place order')
       }
@@ -131,16 +135,16 @@ export default function CheckoutPage() {
   const total = getTotal()
 
   return (
-    <div className="min-h-screen py-12 px-4">
+    <div className="min-h-screen py-6 sm:py-8 lg:py-12 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-balance">Checkout</h1>
-          <p className="text-lg text-muted-foreground">Review your order and complete your purchase.</p>
+        <div className="mb-6 sm:mb-8 lg:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-balance">Checkout</h1>
+          <p className="text-base sm:text-lg text-muted-foreground">Review your order and complete your purchase.</p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Order Form */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
+          {/* Order Form - on mobile appears after summary (order-2) */}
+          <div className="order-2 lg:order-1 lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -153,11 +157,11 @@ export default function CheckoutPage() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" placeholder="John" defaultValue={user?.name.split(" ")[0] || ""} required />
+                      <Input id="firstName" placeholder="John" defaultValue={user?.name?.split(" ")[0] ?? ""} required className="min-h-12 text-base touch-manipulation" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" placeholder="Doe" defaultValue={user?.name.split(" ")[1] || ""} required />
+                      <Input id="lastName" placeholder="Doe" defaultValue={user?.name?.split(" ")[1] ?? ""} required className="min-h-12 text-base touch-manipulation" />
                     </div>
                   </div>
 
@@ -167,14 +171,15 @@ export default function CheckoutPage() {
                       id="email"
                       type="email"
                       placeholder="john@example.com"
-                      defaultValue={user?.email || ""}
+                      defaultValue={user?.email ?? ""}
                       required
+                      className="min-h-12 text-base touch-manipulation"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" placeholder="(555) 123-4567" required />
+                    <Input id="phone" type="tel" placeholder="(555) 123-4567" required className="min-h-12 text-base touch-manipulation" />
                   </div>
 
                   <Separator className="my-6" />
@@ -183,21 +188,21 @@ export default function CheckoutPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="address">Street Address</Label>
-                    <Input id="address" placeholder="123 Main St" required />
+                    <Input id="address" placeholder="123 Main St" required className="min-h-12 text-base touch-manipulation" />
                   </div>
 
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="space-y-2 sm:col-span-2">
                       <Label htmlFor="city">City</Label>
-                      <Input id="city" placeholder="New York" required />
+                      <Input id="city" placeholder="New York" required className="min-h-12 text-base touch-manipulation" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="zip">ZIP Code</Label>
-                      <Input id="zip" placeholder="10001" required />
+                      <Input id="zip" placeholder="10001" required className="min-h-12 text-base touch-manipulation" />
                     </div>
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full mt-6" disabled={isProcessing}>
+                  <Button type="submit" size="lg" className="w-full mt-6 min-h-12 text-base touch-manipulation" disabled={isProcessing}>
                     {isProcessing ? "Placing Order..." : "Order Now"}
                   </Button>
                 </form>
@@ -205,9 +210,9 @@ export default function CheckoutPage() {
             </Card>
           </div>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4">
+          {/* Order Summary - on mobile shown first (order-1) so total is visible before form */}
+          <div className="order-1 lg:order-2 lg:col-span-1">
+            <Card className="lg:sticky lg:top-4">
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
