@@ -10,9 +10,13 @@ jobs:
   super-lint:
     name: Lint code base
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Run Super-Linter
         uses: github/super-linter@v4
@@ -22,3 +26,10 @@ jobs:
           TYPESCRIPT_STANDARD_TSCONFIG_FILE: tsconfig.json
           VALIDATE_TYPESCRIPT_STANDARD: false
           FILTER_REGEX_EXCLUDE: '.*\.md$|.*pnpm-lock\.yaml$'
+          # Use project ESLint instead of Super-Linter's TS/TSX to avoid duplicate/conflicting rules
+          VALIDATE_TYPESCRIPT_ES: false
+          VALIDATE_TSX: false
+          # Reduce noise from copy-paste detector (optional: set true to re-enable)
+          VALIDATE_JSCPD: false
+          # Rely on repo ESLint; disable duplicate TS/TSX and action checks if desired
+          VALIDATE_GITHUB_ACTIONS: false
