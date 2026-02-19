@@ -30,8 +30,8 @@ export function Logo({ className, showText = false, size = "md" }: LogoProps) {
   // Use black logo for light mode, white logo for dark mode
   // Default to black logo if theme is not yet mounted
   const logoSrc = mounted && theme === "dark" 
-    ? "/xmas-logo-white.png" 
-    : "/xmas-logo-black.png"
+    ? "/logo-white.png" 
+    : "/logo-black.png"
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
