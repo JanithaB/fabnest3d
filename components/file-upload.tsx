@@ -154,9 +154,12 @@ export function FileUpload() {
         throw new Error(quoteData.error || 'Failed to create quote request')
       }
 
-      // Step 4: Show success and redirect
-      alert('Quote request submitted successfully! An admin will review your file and send you a price quote via email.')
-      router.push('/account/orders')
+      // Step 4: Redirect to thank-you
+      const quoteId = quoteData?.quoteRequest?.id || quoteData?.id
+      const thankYouQuery = quoteId
+        ? `?type=quote&id=${encodeURIComponent(quoteId)}`
+        : "?type=quote"
+      router.push(`/shop/thank-you${thankYouQuery}`)
     } catch (error: any) {
       console.error('Upload error:', error)
       setUploadError(error.message || 'Failed to upload file. Please try again.')

@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs"
 
 type Product = {
   id: string
@@ -105,6 +106,13 @@ export default function ProductPage() {
   return (
     <main className="flex-1 py-6 sm:py-8 lg:py-12 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
+        <PageBreadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Marketplace", href: "/shop/products" },
+            { label: product.name },
+          ]}
+        />
         <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
           {/* Product Images - Carousel */}
           <div className="space-y-4 min-w-0">

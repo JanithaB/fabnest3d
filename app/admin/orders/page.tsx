@@ -85,8 +85,13 @@ export default function AdminOrdersPage() {
       })
 
       if (response.ok) {
-        // Refresh orders to show updated status
+        const data = await response.json()
         await fetchOrders()
+        if (data.emailSent === false) {
+          alert(
+            `Order status updated, but the email was NOT sent.\n\n${data.emailError || 'Check GMAIL_USER / GMAIL_APP_PASSWORD in .env'}`
+          )
+        }
       } else {
         const error = await response.json()
         alert(error.error || 'Failed to update order status')

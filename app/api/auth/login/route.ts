@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
+        whatsappNumber: user.whatsappNumber,
         role: user.role,
         createdAt: user.createdAt.toISOString(),
       }

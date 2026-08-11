@@ -8,13 +8,14 @@ datasource db {
 
 // User model - stores all user accounts
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String // hashed password
-  name      String
-  role      String   @default("user") // "user" | "admin"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String // hashed password
+  name           String
+  whatsappNumber String? // E.164-style digits, e.g. 94771234567
+  role           String   @default("user") // "user" | "admin"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   orders        Order[]

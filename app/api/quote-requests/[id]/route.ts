@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, requireAdmin } from '@/lib/auth-server'
 import { validateFloat, validateStringLength } from '@/lib/validation'
-import { sendPIEmail } from '@/lib/email'
+import { sendPIEmail, sendQuoteStatusEmail } from '@/lib/email'
 
 // Helper function to handle API errors
 function handleApiError(error: any, defaultMessage: string): NextResponse {
@@ -174,7 +174,12 @@ export async function PUT(
     // Handle sending PI
     // Use the price from updateData if provided, otherwise use existing price
     const priceForPI = updateData.requestedPrice ?? existingRequest.requestedPrice
+    const previousStatus = existingRequest.status
+    const nextStatus = updateData.status ?? previousStatus
     
+    let emailSent: boolean | undefined
+    let emailError: string | undefined
+
     if (sendPI === true) {
       if (!priceForPI) {
         return NextResponse.json(
@@ -206,16 +211,15 @@ export async function PUT(
         adminName: updateData.adminName || admin.email,
       })
 
+      emailSent = emailResult.success
+      emailError = emailResult.error
+
       if (emailResult.success) {
         updateData.piSent = true
         updateData.piSentAt = new Date()
       } else {
-        // Log error but don't fail the request
         console.error('Failed to send PI email:', emailResult.error)
-        // Still mark as sent if email service is not configured
-        // In production, you might want to handle this differently
-        updateData.piSent = true
-        updateData.piSentAt = new Date()
+        // Do not mark piSent when email failed
       }
     }
 
@@ -226,9 +230,31 @@ export async function PUT(
       include: quoteRequestInclude
     })
 
+    // Notify on quoted (without PI) or rejected status changes
+    const statusChanged = nextStatus !== previousStatus
+    if (statusChanged && !sendPI) {
+      if (nextStatus === 'rejected' || nextStatus === 'quoted') {
+        const emailResult = await sendQuoteStatusEmail({
+          to: existingRequest.user.email,
+          customerName: existingRequest.user.name || 'Customer',
+          quoteRequestId: id,
+          fileName: existingRequest.customFile.file.filename,
+          status: nextStatus,
+          price: quoteRequest.requestedPrice,
+          adminNotes: quoteRequest.adminNotes,
+        })
+        emailSent = emailResult.success
+        emailError = emailResult.error
+        if (!emailResult.success) {
+          console.error('Failed to send quote status email:', emailResult.error)
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      quoteRequest
+      quoteRequest,
+      ...(emailSent !== undefined ? { emailSent, emailError } : {}),
     })
   } catch (error: any) {
     return handleApiError(error, 'Failed to update quote request')

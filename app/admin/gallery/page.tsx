@@ -90,7 +90,13 @@ const MultiImageUpload = ({
       }}
       disabled={disabled || uploading}
     />
-    {uploading && <p className="text-sm text-muted-foreground mt-1">Uploading...</p>}
+    {uploading ? (
+      <p className="text-sm text-muted-foreground mt-1">Uploading &amp; optimizing to WebP...</p>
+    ) : (
+      <p className="text-xs text-muted-foreground mt-1">
+        JPEG/PNG/WebP accepted. Images are compressed and saved as WebP automatically.
+      </p>
+    )}
     {imageEntries.length > 0 && (
       <div className="flex flex-wrap gap-2 mt-3">
         {imageEntries.map((entry, index) => (

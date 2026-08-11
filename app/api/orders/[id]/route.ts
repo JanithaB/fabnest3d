@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, requireAdmin } from '@/lib/auth-server'
 import { validateStringLength } from '@/lib/validation'
 import { normalizeFileUrl } from '@/lib/file-url'
+import { sendOrderStatusEmail } from '@/lib/email'
 
 // GET /api/orders/[id] - Get order details
 export async function GET(
@@ -21,6 +22,7 @@ export async function GET(
             id: true,
             name: true,
             email: true,
+            whatsappNumber: true,
           }
         },
         items: {
@@ -126,7 +128,16 @@ export async function PUT(
 
     // Check if order exists
     const existingOrder = await prisma.order.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        user: {
+          select: {
+            email: true,
+            name: true,
+            whatsappNumber: true,
+          }
+        }
+      }
     })
 
     if (!existingOrder) {
@@ -176,10 +187,21 @@ export async function PUT(
       updateData.estimatedDelivery = estimatedDelivery ? new Date(estimatedDelivery) : null
     }
 
+    const previousStatus = existingOrder.status
+    const statusChanged =
+      updateData.status !== undefined && updateData.status !== previousStatus
+
     const order = await prisma.order.update({
       where: { id },
       data: updateData,
       include: {
+        user: {
+          select: {
+            email: true,
+            name: true,
+            whatsappNumber: true,
+          }
+        },
         items: {
           include: {
             product: true,
@@ -193,8 +215,29 @@ export async function PUT(
       }
     })
 
+    let emailSent: boolean | undefined
+    let emailError: string | undefined
+
+    if (statusChanged) {
+      const emailResult = await sendOrderStatusEmail({
+        to: order.user.email,
+        customerName: order.user.name || 'Customer',
+        orderId: order.id,
+        previousStatus,
+        newStatus: order.status,
+        trackingNumber: order.trackingNumber,
+        estimatedDelivery: order.estimatedDelivery,
+      })
+      emailSent = emailResult.success
+      emailError = emailResult.error
+      if (!emailResult.success) {
+        console.error('Failed to send order status email:', emailResult.error)
+      }
+    }
+
     return NextResponse.json({
-      order
+      order,
+      ...(emailSent !== undefined ? { emailSent, emailError } : {}),
     })
   } catch (error: any) {
     console.error('Update order error:', error)

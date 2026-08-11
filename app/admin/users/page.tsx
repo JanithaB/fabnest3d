@@ -36,6 +36,7 @@ export default function AdminUsersPage() {
   const [editFormData, setEditFormData] = useState({
     name: "",
     email: "",
+    whatsappNumber: "",
     password: "",
   })
   const [updating, setUpdating] = useState(false)
@@ -65,7 +66,8 @@ export default function AdminUsersPage() {
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()),
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.whatsappNumber || "").includes(searchTerm.replace(/\D/g, "")),
   )
 
   const handleEdit = (user: any) => {
@@ -73,6 +75,7 @@ export default function AdminUsersPage() {
     setEditFormData({
       name: user.name || "",
       email: user.email || "",
+      whatsappNumber: user.whatsappNumber || "",
       password: "", // Don't pre-fill password
     })
     setIsEditDialogOpen(true)
@@ -92,6 +95,7 @@ export default function AdminUsersPage() {
       const updateData: any = {
         name: editFormData.name,
         email: editFormData.email,
+        whatsappNumber: editFormData.whatsappNumber.trim() || null,
       }
 
       // Only include password if it's been changed
@@ -112,7 +116,7 @@ export default function AdminUsersPage() {
         await fetchUsers()
         setIsEditDialogOpen(false)
         setEditingUser(null)
-        setEditFormData({ name: "", email: "", password: "" })
+        setEditFormData({ name: "", email: "", whatsappNumber: "", password: "" })
         alert('User updated successfully!')
       } else {
         const data = await response.json()
@@ -213,7 +217,7 @@ export default function AdminUsersPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or email..."
+              placeholder="Search by name, email, or WhatsApp..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -256,6 +260,18 @@ export default function AdminUsersPage() {
                           <Badge variant={targetUser.role === "admin" ? "default" : "secondary"}>{targetUser.role}</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">{targetUser.email}</p>
+                        {targetUser.whatsappNumber ? (
+                          <a
+                            href={`https://wa.me/${targetUser.whatsappNumber}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline"
+                          >
+                            WhatsApp: {targetUser.whatsappNumber}
+                          </a>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">WhatsApp: Not provided</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
@@ -347,6 +363,17 @@ export default function AdminUsersPage() {
                 onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                 placeholder="user@example.com"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-whatsapp">WhatsApp Number</Label>
+              <Input
+                id="edit-whatsapp"
+                type="tel"
+                value={editFormData.whatsappNumber}
+                onChange={(e) => setEditFormData({ ...editFormData, whatsappNumber: e.target.value })}
+                placeholder="Enter WhatsApp number"
+              />
+              <p className="text-xs text-muted-foreground">e.g. +9477xxxxxxx, 07xxxxxxxx, or 7xxxxxxxx</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-password">New Password (optional)</Label>

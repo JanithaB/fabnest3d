@@ -131,12 +131,19 @@ export default function AdminQuoteRequestsPage() {
       })
 
       if (response.ok) {
+        const data = await response.json()
         await fetchQuoteRequests()
         setIsDialogOpen(false)
         setSelectedQuote(null)
         setPrice("")
         setNotes("")
-        alert('Proforma Invoice sent successfully!')
+        if (data.emailSent === false) {
+          alert(
+            `Quote updated, but the email was NOT sent.\n\n${data.emailError || 'Check GMAIL_USER / GMAIL_APP_PASSWORD in .env'}`
+          )
+        } else {
+          alert('Proforma Invoice sent successfully!')
+        }
       } else {
         const data = await response.json()
         alert(data.error || 'Failed to send PI')

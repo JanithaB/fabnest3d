@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const { toast } = useToast()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [whatsappNumber, setWhatsappNumber] = useState("")
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [orderUpdates, setOrderUpdates] = useState(true)
   const [marketingEmails, setMarketingEmails] = useState(false)
@@ -34,6 +35,7 @@ export default function SettingsPage() {
       /* eslint-disable react-hooks/set-state-in-effect -- sync auth user to form when loaded */
       setName(user.name)
       setEmail(user.email)
+      setWhatsappNumber(user.whatsappNumber || "")
       /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [_hasHydrated, isAuthenticated, user, router])
@@ -96,6 +98,19 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp">WhatsApp Number</Label>
+                  <Input
+                    id="whatsapp"
+                    type="tel"
+                    value={whatsappNumber || "Not provided"}
+                    readOnly
+                    disabled
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Used to contact you about orders. Contact support if you need to update it.
+                  </p>
                 </div>
                 <Button type="submit">
                   <Save className="mr-2 h-4 w-4" />

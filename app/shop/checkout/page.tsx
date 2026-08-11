@@ -82,7 +82,7 @@ export default function CheckoutPage() {
         }),
       })
 
-      let data: { error?: string } = {}
+      let data: { error?: string; order?: { id?: string }; id?: string } = {}
       try {
         data = await response.json()
       } catch {
@@ -94,11 +94,15 @@ export default function CheckoutPage() {
 
       // Success
       clearCart()
+      const orderId = data.order?.id || data.id
       toast({
         title: "Order Placed",
         description: "Your order has been placed successfully!",
       })
-      router.push("/account/orders")
+      const thankYouQuery = orderId
+        ? `?type=order&id=${encodeURIComponent(orderId)}`
+        : "?type=order"
+      router.push(`/shop/thank-you${thankYouQuery}`)
     } catch (error: any) {
       console.error('Order placement error:', error)
       toast({

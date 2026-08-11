@@ -7,6 +7,7 @@ export type User = {
   id: string
   email: string
   name: string
+  whatsappNumber?: string | null
   role: "user" | "admin"
   createdAt: string
 }
@@ -18,7 +19,7 @@ type AuthState = {
   _hasHydrated: boolean
   setHasHydrated: (state: boolean) => void
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>
+  signup: (email: string, password: string, name: string, whatsappNumber: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
 }
 
@@ -75,14 +76,14 @@ export const useAuth = create<AuthState>()(
           return { success: false, error: error.message || 'Network error. Please try again.' }
         }
       },
-      signup: async (email: string, password: string, name: string) => {
+      signup: async (email: string, password: string, name: string, whatsappNumber: string) => {
         try {
           const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ email, password, name }),
+            body: JSON.stringify({ email, password, name, whatsappNumber }),
           })
 
           const data = await response.json()

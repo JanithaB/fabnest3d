@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth"
 import { ArrowLeft, Package, FileText, Loader2 } from "lucide-react"
 import { formatCurrency } from "@/lib/currency"
+import { WhatsAppCta } from "@/components/whatsapp-cta"
 
 type OrderStatus = "pending" | "processing" | "printing" | "shipped" | "delivered" | "completed" | "cancelled"
 
@@ -106,6 +107,11 @@ function OrderCard({ order }: { order: any }) {
                   </div>
                 </>
               )}
+            </div>
+            <div className="mt-4">
+              <WhatsAppCta
+                prefillText={`Hi FABNEST, I have a question about order #${order.id.slice(0, 8)}.`}
+              />
             </div>
           </div>
         </div>
@@ -391,6 +397,11 @@ export default function OrdersPage() {
                               </div>
                             </>
                           )}
+                        </div>
+                        <div className="mt-4">
+                          <WhatsAppCta
+                            prefillText={`Hi FABNEST, I have a question about quote request #${quote.id.slice(0, 8)}.`}
+                          />
                         </div>
                         {quote.status === "quoted" && quote.requestedPrice && (
                           <div className="mt-4 pt-4 border-t space-y-3">

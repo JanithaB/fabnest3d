@@ -28,6 +28,9 @@ export default function UploadPage() {
           <p className="text-lg text-muted-foreground leading-relaxed">
             Upload your 3D model file and request a price quote. Our team will review your file and send you a detailed Proforma Invoice via email. We support STL, OBJ, 3MF, RAR, and ZIP file formats.
           </p>
+          <p className="text-sm sm:text-base font-medium text-foreground">
+            We respond to quote requests within 1 business day.
+          </p>
         </div>
 
         <FileUpload />
