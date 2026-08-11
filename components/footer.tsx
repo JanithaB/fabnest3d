@@ -3,14 +3,15 @@
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/lib/auth"
+import { WhatsAppCta } from "@/components/whatsapp-cta"
 
 export function Footer() {
   const { user } = useAuth()
   const isAdmin = user?.role === "admin"
   return (
-    <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <footer className="border-t bg-background/95">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="space-y-4">
             <Link href="/" className="flex items-center">
               <Logo size="md" />
@@ -54,39 +55,20 @@ export function Footer() {
             <h3 className="font-semibold">Company</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                  About Us
+                <Link href="/#faq" className="text-muted-foreground hover:text-foreground transition-colors">
+                  FAQ
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Contact
-                </Link>
+                <WhatsAppCta
+                  asLink
+                  label="Contact on WhatsApp"
+                  prefillText="Hi FABNEST, I'd like to get in touch."
+                />
               </li>
               <li>
-                <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Blog
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="font-semibold">Legal</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Shipping Policy
+                <Link href="/shop/upload" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Request a quote
                 </Link>
               </li>
             </ul>

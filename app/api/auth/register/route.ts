@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, generateToken } from '@/lib/auth-server'
-import { validateEmail, validateStringLength } from '@/lib/validation'
+import { validateEmail, validateStringLength, validateWhatsAppNumber } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name } = await request.json()
+    const { email, password, name, whatsappNumber } = await request.json()
 
     // Validate input
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !whatsappNumber) {
       return NextResponse.json(
-        { error: 'Email, password, and name are required' },
+        { error: 'Email, password, name, and WhatsApp number are required' },
         { status: 400 }
       )
     }
@@ -45,6 +45,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: nameValidation.error }, { status: 400 })
     }
 
+    // Validate WhatsApp number
+    const whatsappValidation = validateWhatsAppNumber(whatsappNumber)
+    if (!whatsappValidation.valid) {
+      return NextResponse.json(
+        { error: whatsappValidation.error },
+        { status: 400 }
+      )
+    }
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() }
@@ -66,6 +75,7 @@ export async function POST(request: NextRequest) {
         email: email.toLowerCase().trim(),
         password: hashedPassword,
         name: name.trim(),
+        whatsappNumber: whatsappValidation.value,
         role: 'user', // Default role
       }
     })
@@ -81,6 +91,7 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
+        whatsappNumber: user.whatsappNumber,
         role: user.role,
         createdAt: user.createdAt.toISOString(),
       }
@@ -102,4 +113,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

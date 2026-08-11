@@ -151,6 +151,14 @@ Update quote request (admin only) - set price, send PI
 
 ## Email Integration
 
+Emails are sent via **Gmail SMTP** using Nodemailer (`lib/email.ts`).
+
+### When emails are sent
+
+- **Order status change** — admin updates status on an order (`PUT /api/orders/[id]`)
+- **Proforma Invoice** — admin sets price and sends PI (`sendPI: true` on quote update)
+- **Quote status** — quote becomes `quoted` (without PI) or `rejected`
+
 ### Proforma Invoice Email
 
 When an admin sets a price and sends a PI, the system sends an email to the customer with:
@@ -160,28 +168,24 @@ When an admin sets a price and sends a PI, the system sends an email to the cust
 - Material and quality selected
 - Quoted price
 - Admin notes (if any)
-- Instructions to accept/reject
+- Instructions to accept via the account dashboard
 
-### Email Service Setup
+`piSent` is only set to `true` when the PI email send succeeds.
 
-The email service is currently a placeholder. To enable actual email sending:
+### Environment Variables
 
-1. **Choose an email service:**
-   - SendGrid
-   - Resend
-   - AWS SES
-   - Nodemailer (SMTP)
+```env
+GMAIL_USER=yourshop@gmail.com
+GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+EMAIL_FROM=Fabnest3D <yourshop@gmail.com>
+NEXT_PUBLIC_WHATSAPP_NUMBER=9477XXXXXXX
+```
 
-2. **Update `lib/email.ts`:**
-   - Implement `sendPIEmail()` function
-   - Configure email service credentials
-   - Use the provided HTML template or create your own
+Use a Google [App Password](https://myaccount.google.com/apppasswords), not the normal account password. If `GMAIL_*` are unset, `ADMIN_EMAIL` and `APP_PASSCODE` are used as fallbacks.
 
-3. **Environment Variables:**
-   ```env
-   EMAIL_SERVICE_API_KEY=your_api_key
-   EMAIL_FROM=noreply@fabnest3d.com
-   ```
+### WhatsApp (site CTA)
+
+Set `NEXT_PUBLIC_WHATSAPP_NUMBER` (country code + number, digits only). The site shows a click-to-chat link on account order/quote cards and in the footer. No WhatsApp Business API messaging.
 
 ## Frontend Integration
 
@@ -192,15 +196,16 @@ The email service is currently a placeholder. To enable actual email sending:
 - Shows material and quality selection (no price calculation)
 - After submission, redirects to account/orders page
 
-### Admin Panel (TODO)
+### Admin Panel
 
-Create admin pages to:
+Admins can:
 - List all quote requests
 - Filter by status
 - View quote request details
 - Download uploaded files
 - Set price and send PI
 - Track PI status
+- Update order statuses (triggers customer email)
 
 ## Status Flow
 
@@ -224,9 +229,5 @@ pending → quoted → accepted
 
 ## Next Steps
 
-1. **Create Admin UI**: Build admin pages for managing quote requests
-2. **Email Integration**: Set up actual email service
-3. **Order Creation**: Allow users to create orders from accepted quotes
-4. **Notifications**: Add email notifications for status changes
-5. **File Analysis**: Integrate 3D file analysis tools for automatic price estimation (optional)
+1. **File Analysis**: Integrate 3D file analysis tools for automatic price estimation (optional)
 

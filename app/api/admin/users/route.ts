@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-server'
 import { hashPassword } from '@/lib/auth-server'
-import { validateEmail, validateStringLength } from '@/lib/validation'
+import { validateEmail, validateStringLength, validateWhatsAppNumber } from '@/lib/validation'
 
 // GET /api/admin/users - List all users (admin only)
 export async function GET(request: NextRequest) {
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
           id: true,
           email: true,
           name: true,
+          whatsappNumber: true,
           role: true,
           createdAt: true,
           updatedAt: true,
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     const admin = requireAdmin(request)
     const body = await request.json()
     
-    const { email, password, name, role = 'user' } = body
+    const { email, password, name, role = 'user', whatsappNumber } = body
 
     // Validate required fields
     if (!email || !password || !name) {
@@ -106,6 +107,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: nameValidation.error }, { status: 400 })
     }
 
+    // Validate WhatsApp number (optional when admin creates a user)
+    const whatsappValidation = validateWhatsAppNumber(whatsappNumber, { required: false })
+    if (!whatsappValidation.valid) {
+      return NextResponse.json(
+        { error: whatsappValidation.error },
+        { status: 400 }
+      )
+    }
+
     // Validate role
     if (!['user', 'admin'].includes(role)) {
       return NextResponse.json(
@@ -135,12 +145,14 @@ export async function POST(request: NextRequest) {
         email: email.toLowerCase().trim(),
         password: hashedPassword,
         name: name.trim(),
+        whatsappNumber: whatsappValidation.value ?? null,
         role: role,
       },
       select: {
         id: true,
         email: true,
         name: true,
+        whatsappNumber: true,
         role: true,
         createdAt: true,
         updatedAt: true,

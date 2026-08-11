@@ -78,3 +78,52 @@ export function validateEmail(email: string): { valid: boolean; error?: string }
   return { valid: true }
 }
 
+/**
+ * Validate and normalize a Sri Lankan WhatsApp number.
+ * Accepts: +947XXXXXXXX | 07XXXXXXXX | 7XXXXXXXX
+ * Stores as digits: 947XXXXXXXX (for wa.me links)
+ */
+export function validateWhatsAppNumber(
+  value: unknown,
+  options: { required?: boolean } = { required: true }
+): { valid: boolean; value?: string; error?: string } {
+  const required = options.required !== false
+
+  if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+    if (!required) {
+      return { valid: true, value: undefined }
+    }
+    return { valid: false, error: 'WhatsApp number is required' }
+  }
+
+  if (typeof value !== 'string') {
+    return { valid: false, error: 'WhatsApp number must be a string' }
+  }
+
+  const digits = value.trim().replace(/[\s\-()]/g, '').replace(/^\+/, '')
+
+  if (!/^\d+$/.test(digits)) {
+    return { valid: false, error: 'Enter a valid WhatsApp number' }
+  }
+
+  let normalized: string
+
+  if (/^947\d{8}$/.test(digits)) {
+    // +947XXXXXXXX / 947XXXXXXXX
+    normalized = digits
+  } else if (/^07\d{8}$/.test(digits)) {
+    // 07XXXXXXXX
+    normalized = `94${digits.slice(1)}`
+  } else if (/^7\d{8}$/.test(digits)) {
+    // 7XXXXXXXX
+    normalized = `94${digits}`
+  } else {
+    return {
+      valid: false,
+      error: 'Enter a valid number like +9477xxxxxxx, 07xxxxxxxx, or 7xxxxxxxx',
+    }
+  }
+
+  return { valid: true, value: normalized }
+}
+

@@ -18,6 +18,7 @@ export default function SignupPage() {
   const { signup } = useAuth()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [whatsappNumber, setWhatsappNumber] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
@@ -37,8 +38,13 @@ export default function SignupPage() {
       return
     }
 
+    if (!whatsappNumber.trim()) {
+      setError("WhatsApp number is required")
+      return
+    }
+
     setIsLoading(true)
-    const result = await signup(email, password, name)
+    const result = await signup(email, password, name, whatsappNumber)
 
     if (result.success) {
       // Get the user from the store after signup completes
@@ -78,7 +84,7 @@ export default function SignupPage() {
               <Input
                 id="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder="Enter your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -91,13 +97,29 @@ export default function SignupPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
                 className="h-10 sm:h-11 text-sm sm:text-base"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="whatsappNumber" className="text-sm sm:text-base">WhatsApp Number</Label>
+              <Input
+                id="whatsappNumber"
+                type="tel"
+                placeholder="Enter your WhatsApp number"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                required
+                disabled={isLoading}
+                className="h-10 sm:h-11 text-sm sm:text-base"
+              />
+              <p className="text-xs text-muted-foreground">
+                e.g. +9477xxxxxxx, 07xxxxxxxx, or 7xxxxxxxx
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>

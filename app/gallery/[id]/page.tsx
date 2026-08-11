@@ -9,7 +9,8 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, Calendar, User, ImageIcon, ChevronLeft, ChevronRight } from "lucide-react"
+import { Loader2, Calendar, User, ImageIcon, ChevronLeft, ChevronRight } from "lucide-react"
+import { PageBreadcrumbs } from "@/components/page-breadcrumbs"
 
 type GalleryItem = {
   id: string
@@ -128,15 +129,13 @@ export default function GalleryItemPage() {
       <Navbar />
       <main className="flex-1 py-6 sm:py-8 lg:py-12 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="mb-4 sm:mb-6 min-h-[44px] touch-manipulation"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
+          <PageBreadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Gallery", href: "/gallery" },
+              { label: item.title },
+            ]}
+          />
 
           <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
             {/* Images Section - Carousel */}

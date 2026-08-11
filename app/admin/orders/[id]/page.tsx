@@ -68,6 +68,7 @@ type Order = {
     id: string
     name: string
     email: string
+    whatsappNumber?: string | null
   }
 }
 
@@ -303,6 +304,21 @@ export default function AdminOrderDetailPage() {
                   <div>
                     <p className="text-sm text-muted-foreground">Email</p>
                     <p className="font-medium">{order.user.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">WhatsApp</p>
+                    {order.user.whatsappNumber ? (
+                      <a
+                        href={`https://wa.me/${order.user.whatsappNumber}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {order.user.whatsappNumber}
+                      </a>
+                    ) : (
+                      <p className="font-medium text-muted-foreground">Not provided</p>
+                    )}
                   </div>
                 </>
               ) : (

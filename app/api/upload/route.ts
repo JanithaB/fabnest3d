@@ -4,6 +4,7 @@ import { join } from 'path'
 import { existsSync } from 'fs'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth-server'
+import { optimizeImageToWebp } from '@/lib/image-optimize'
 
 // Maximum file size: 100MB
 const MAX_FILE_SIZE = 100 * 1024 * 1024
@@ -107,9 +108,34 @@ export async function POST(request: NextRequest) {
       await mkdir(storageDir, { recursive: true })
     }
 
-    // Sanitize file extension to prevent path traversal
-    const sanitizedExt = ext.replace(/[^a-z0-9]/gi, '').toLowerCase()
-    if (!sanitizedExt) {
+    const bytes = await file.arrayBuffer()
+    const inputBuffer = Buffer.from(bytes)
+
+    let outputBuffer: Buffer = inputBuffer
+    let outputMimeType = mimeType
+    let outputExt = ext.replace(/[^a-z0-9]/gi, '').toLowerCase()
+    let displayFilename = file.name
+    let storedSize = file.size
+
+    // Marketplace / gallery (and generic image) uploads → optimized WebP
+    if (fileType === 'image') {
+      try {
+        const optimized = await optimizeImageToWebp(inputBuffer, file.name)
+        outputBuffer = optimized.buffer
+        outputMimeType = optimized.mimeType
+        outputExt = 'webp'
+        displayFilename = optimized.filename
+        storedSize = optimized.size
+      } catch (optimizeError) {
+        console.error('Image optimization failed:', optimizeError)
+        return NextResponse.json(
+          { error: 'Failed to process image. Please try a different JPEG, PNG, or WebP file.' },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (!outputExt) {
       return NextResponse.json(
         { error: 'Invalid file extension' },
         { status: 400 }
@@ -119,7 +145,7 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
-    const filename = `${timestamp}-${randomString}.${sanitizedExt}`
+    const filename = `${timestamp}-${randomString}.${outputExt}`
     const filepath = join(storageDir, filename)
 
     // Additional security: Ensure filepath is within the intended storage directory (prevent path traversal)
@@ -134,23 +160,19 @@ export async function POST(request: NextRequest) {
     // Save file to disk
     let fileWritten = false
     try {
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      await writeFile(filepath, buffer)
+      await writeFile(filepath, outputBuffer)
       fileWritten = true
 
-      // Create public URL (relative to public folder)
       const url = `${urlPrefix}/${filename}`
 
-      // Save file metadata to database
       const fileRecord = await prisma.file.create({
         data: {
-          filename: file.name,
+          filename: displayFilename,
           path: filepath,
           url: url,
-          mimeType: mimeType,
+          mimeType: outputMimeType,
           fileType: fileType,
-          size: file.size,
+          size: storedSize,
           uploadedBy: user.userId,
         }
       })
@@ -163,6 +185,7 @@ export async function POST(request: NextRequest) {
           filename: fileRecord.filename,
           size: fileRecord.size,
           fileType: fileRecord.fileType,
+          mimeType: fileRecord.mimeType,
         }
       })
     } catch (error: any) {
@@ -193,4 +216,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

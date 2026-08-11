@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-server'
 import { hashPassword } from '@/lib/auth-server'
-import { validateEmail, validateStringLength } from '@/lib/validation'
+import { validateEmail, validateStringLength, validateWhatsAppNumber } from '@/lib/validation'
 
 // PUT /api/admin/users/[id] - Update user (admin only)
 export async function PUT(
@@ -14,7 +14,7 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     
-    const { email, password, name, role } = body
+    const { email, password, name, role, whatsappNumber } = body
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -74,6 +74,19 @@ export async function PUT(
       updateData.name = name.trim()
     }
 
+    if (whatsappNumber !== undefined) {
+      const whatsappValidation = validateWhatsAppNumber(whatsappNumber, {
+        required: whatsappNumber !== null && whatsappNumber !== '',
+      })
+      if (!whatsappValidation.valid) {
+        return NextResponse.json(
+          { error: whatsappValidation.error },
+          { status: 400 }
+        )
+      }
+      updateData.whatsappNumber = whatsappValidation.value ?? null
+    }
+
     if (password !== undefined) {
       if (password.length < 6) {
         return NextResponse.json(
@@ -125,6 +138,7 @@ export async function PUT(
         id: true,
         email: true,
         name: true,
+        whatsappNumber: true,
         role: true,
         createdAt: true,
         updatedAt: true,

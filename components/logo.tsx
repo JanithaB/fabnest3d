@@ -41,7 +41,6 @@ export function Logo({ className, showText = false, size = "md" }: LogoProps) {
         width={logoDimensions.width}
         height={logoDimensions.height}
         className="flex-shrink-0 pt-2"
-        priority
       />
       {showText && (
         <span className={cn("font-bold tracking-tight", textSize)}>

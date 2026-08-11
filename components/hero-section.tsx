@@ -15,7 +15,7 @@ export function HeroSection() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const spans = headingRef.current?.querySelectorAll('span')
+      const spans = headingRef.current?.querySelectorAll('span.hero-line')
       if (spans?.length) gsap.fromTo(spans, { y: 32, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.08, ease: 'power2.out', force3D: true })
       if (subRef.current) gsap.fromTo(subRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, delay: 0.2, ease: 'power2.out', force3D: true })
       if (btnsRef.current) gsap.fromTo(btnsRef.current, { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, delay: 0.4, ease: 'power2.out', force3D: true })
@@ -52,36 +52,22 @@ export function HeroSection() {
             alt="Person in VR exploring 3D"
             width={720}
             height={840}
-            className="object-contain object-bottom w-full h-full [mix-blend-mode:lighten]"
-            priority
+            className="object-contain object-bottom w-full h-full opacity-95"
             sizes="(max-width: 480px) 320px, (max-width: 640px) 360px, (max-width: 768px) 320px, 680px"
           />
         </div>
       </div>
 
-      {/* Baby dragon – bottom-right; hidden on mobile, visible from sm */}
-      {/* <div className="absolute bottom-0 right-0 z-[2] pointer-events-none hidden sm:flex items-end justify-end pr-[max(0.5rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pr-6 sm:pb-4 md:pr-8 md:pb-6">
-        <Image
-          src="/site_images/baby_dragon.gif"
-          alt=""
-          width={320}
-          height={320}
-          className="w-24 h-24 min-[480px]:w-28 min-[480px]:h-28 sm:w-36 sm:h-36 md:w-56 md:h-56 lg:w-64 lg:h-64 xl:w-72 xl:h-72 object-contain object-bottom drop-shadow-md"
-          unoptimized
-        />
-      </div> */}
-
-      {/* Subtle gradient orbs for depth */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/15 rounded-full blur-3xl opacity-40 animate-pulse z-[1]" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/15 rounded-full blur-3xl opacity-40 animate-pulse z-[1] [animation-delay:1s]" />
+      {/* Static soft gradients for depth (no animated blur) */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl opacity-50 z-[1] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-50 z-[1] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10 flex-1 flex flex-col justify-center md:block pt-2 sm:pt-4 md:pt-0">
         <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-6">
           <h1 ref={headingRef} className="text-3xl min-[480px]:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-balance relative px-1">
-            <span className="relative z-10 block">Precision 3D Printing</span>
-            <span className="block text-primary relative z-10">
+            <span className="hero-line relative z-10 block">Precision 3D Printing</span>
+            <span className="hero-line block text-primary relative z-10">
               Made Simple
-              <span className="absolute -inset-1 bg-primary/20 blur-xl opacity-50 animate-pulse" />
             </span>
           </h1>
           <p ref={subRef} className="text-sm min-[480px]:text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed px-2">
@@ -99,7 +85,7 @@ export function HeroSection() {
               asChild
               size="lg"
               variant="outline"
-              className="text-base w-full sm:w-auto min-h-11 touch-manipulation bg-background/80 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-none"
+              className="text-base w-full sm:w-auto min-h-11 touch-manipulation bg-background/80 sm:bg-transparent"
             >
               <Link href="/shop/upload">Upload Your Design</Link>
             </Button>
